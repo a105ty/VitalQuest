@@ -1,0 +1,3948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VitalQuest HIT — Student Wellness RPG</title>
+<style>
+/* ═══════════════════════════════════════════════
+   DESIGN TOKENS — Dark RPG / Navy + Gold
+═══════════════════════════════════════════════ */
+:root {
+  --navy:       #0D1B2A;
+  --navy-mid:   #1A2744;
+  --navy-lt:    #243660;
+  --navy-rim:   #2E4A7A;
+  --gold:       #FFD700;
+  --gold-drk:   #C8A800;
+  --gold-pale:  #FFF0A0;
+  --xp:         #00BFFF;
+  --xp-drk:     #0077AA;
+  --green:      #39FF14;
+  --green-drk:  #228B00;
+  --red:        #FF4455;
+  --orange:     #FF8C00;
+  --purple:     #9B59B6;
+  --teal:       #00CED1;
+  --white:      #E8F0FF;
+  --gray:       #6A7FA0;
+  --black:      #000;
+}
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'VT323',monospace;
+  background:var(--navy);
+  color:var(--white);
+  min-height:100vh;
+  overflow-x:hidden;
+  image-rendering:pixelated;
+}
+
+/* ═══════════════════════════════════════════════
+   UTILITY
+═══════════════════════════════════════════════ */
+.px-border{border:4px solid var(--navy-rim);box-shadow:4px 4px 0 #000,inset 1px 1px 0 rgba(255,255,255,.08)}
+.px-gold  {border:4px solid var(--gold);    box-shadow:4px 4px 0 #000,0 0 12px rgba(255,215,0,.35)}
+.px-btn{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  background:var(--gold);color:#000;
+  border:4px solid var(--gold-drk);
+  box-shadow:4px 4px 0 #000;
+  padding:8px 14px;cursor:pointer;
+  transition:transform .1s,box-shadow .1s;
+  white-space:nowrap;
+}
+.px-btn:hover {transform:translate(-2px,-2px);box-shadow:6px 6px 0 #000}
+.px-btn:active{transform:translate(2px,2px);  box-shadow:2px 2px 0 #000}
+.px-btn.blue{background:var(--xp);border-color:var(--xp-drk)}
+.px-btn.green{background:var(--green);border-color:var(--green-drk);
+  animation:greenPulse 2s ease-in-out infinite}
+@keyframes greenPulse{0%,100%{box-shadow:4px 4px 0 #000}50%{box-shadow:4px 4px 16px rgba(57,255,20,.5)}}
+.px-btn.red{background:var(--red);border-color:#AA0011;color:#fff}
+.section-title{
+  font-family:'Press Start 2P',monospace;font-size:9px;
+  color:var(--gold);margin-bottom:14px;
+  text-shadow:2px 2px 0 #000;
+}
+
+/* ═══════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════ */
+#header{
+  background:var(--navy-mid);
+  border-bottom:4px solid var(--navy-rim);
+  padding:6px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  min-height:44px;
+}
+.logo{
+  font-family:'Press Start 2P',monospace;font-size:9px;
+  color:var(--gold);text-shadow:2px 2px 0 #000;
+}
+.logo span{color:var(--xp)}
+#hdr-stats{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hstat{
+  display:flex;align-items:center;gap:3px;
+  background:var(--navy-lt);border:2px solid var(--navy-rim);
+  padding:2px 7px;font-size:18px;
+}
+.hstat b{color:var(--gold);font-size:20px}
+
+/* ═══════════════════════════════════════════════
+   5-TAB NAV (bottom)
+═══════════════════════════════════════════════ */
+#bottom-nav{
+  position:fixed;bottom:0;left:0;right:0;z-index:300;
+  display:flex;
+  background:var(--navy-mid);
+  border-top:4px solid var(--navy-rim);
+}
+.bnav{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  gap:2px;padding:6px 4px;
+  cursor:pointer;border:none;background:transparent;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  color:var(--gray);transition:all .15s;
+  border-right:2px solid var(--navy-rim);
+}
+.bnav:last-child{border-right:none}
+.bnav .bico{font-size:20px;line-height:1}
+.bnav:hover{background:var(--navy-lt);color:var(--white)}
+.bnav.active{background:var(--navy-lt);color:var(--gold);border-top:4px solid var(--gold)}
+
+/* ═══════════════════════════════════════════════
+   SCREENS
+═══════════════════════════════════════════════ */
+.screen{display:none;padding-bottom:70px}
+.screen.active{display:block}
+
+/* ═══════════════════════════════════════════════
+   WORLD MAP SCREEN
+═══════════════════════════════════════════════ */
+#screen-world{
+  position:relative;
+  height:calc(100vh - 44px);
+  overflow:hidden;
+  padding-bottom:0;
+}
+
+/* --- DYNAMIC SKY --- */
+#world-sky{
+  position:absolute;top:0;left:0;right:0;
+  height:45%;
+  transition:background 60s linear;
+}
+/* Sky states set via JS */
+.sky-dawn    {background:linear-gradient(180deg,#1a0a2e 0%,#ff6b35 60%,#ffd27d 100%)}
+.sky-morning {background:linear-gradient(180deg,#1a3a8c 0%,#4a90d9 55%,#87ceeb 100%)}
+.sky-day     {background:linear-gradient(180deg,#0e2a6e 0%,#2e6bbf 50%,#5b8dd9 100%)}
+.sky-evening {background:linear-gradient(180deg,#1a0a0a 0%,#c0392b 50%,#e67e22 100%)}
+.sky-night   {background:linear-gradient(180deg,#000510 0%,#0d1b4a 60%,#1a2744 100%)}
+
+/* Stars (night only) */
+#stars{position:absolute;top:0;left:0;right:0;height:45%;pointer-events:none;opacity:0;transition:opacity 2s}
+#stars.show{opacity:1}
+.star{position:absolute;background:#fff;animation:twinkle 2s ease-in-out infinite}
+@keyframes twinkle{0%,100%{opacity:.8;transform:scale(1)}50%{opacity:.2;transform:scale(.5)}}
+
+/* Sun / Moon */
+#celestial{
+  position:absolute;top:8%;right:12%;
+  width:36px;height:36px;
+  transition:all 2s;
+}
+.sun-obj{background:var(--gold);border:4px solid var(--gold-drk);box-shadow:0 0 24px rgba(255,215,0,.7);animation:sunGlow 3s ease-in-out infinite}
+.moon-obj{background:#e8e8e8;border:4px solid #aaa;box-shadow:0 0 16px rgba(220,220,255,.5)}
+@keyframes sunGlow{0%,100%{box-shadow:0 0 24px rgba(255,215,0,.7)}50%{box-shadow:0 0 40px rgba(255,215,0,1)}}
+
+/* Clouds */
+.cloud{
+  position:absolute;height:14px;
+  background:rgba(255,255,255,.8);
+  animation:cloudDrift linear infinite;
+  transition:opacity 2s;
+}
+.cloud::before{content:'';position:absolute;background:rgba(255,255,255,.8)}
+@keyframes cloudDrift{from{left:-120px}to{left:calc(100% + 120px)}}
+
+/* Ground layers */
+#ground-grass{
+  position:absolute;top:45%;left:0;right:0;height:10%;
+  transition:background 2s;
+}
+.grass-day  {background:linear-gradient(180deg,#4CAF50 0%,#388E3C 100%);border-top:4px solid #2E7D32}
+.grass-night{background:linear-gradient(180deg,#1a3d1a 0%,#0d1f0d 100%);border-top:4px solid #0d2e0d}
+
+#ground-main{
+  position:absolute;top:55%;left:0;right:0;bottom:56px;
+  background:#5D4037;border-top:4px solid #795548;
+}
+/* PATH */
+#road{
+  position:absolute;top:55%;left:0;right:0;bottom:56px;
+  background:repeating-linear-gradient(90deg,#6D4C41 0px,#6D4C41 60px,#5D4037 60px,#5D4037 120px);
+  border-top:4px solid #8D6E63;
+  clip-path:polygon(0 30%,100% 30%,100% 100%,0 100%);
+}
+
+/* Campus vitality overlay */
+#campus-vitality{
+  position:absolute;top:45%;left:0;right:0;bottom:56px;
+  pointer-events:none;z-index:5;
+  transition:all 3s;
+}
+.vit-trees{
+  position:absolute;bottom:0;
+  display:flex;gap:8px;align-items:flex-end;
+  opacity:0;transition:opacity 2s;
+}
+.vit-tree-trunk{width:8px;height:16px;background:#5D4037}
+.vit-tree-top  {width:20px;height:20px;background:#4CAF50;border:3px solid #388E3C;margin-left:-6px}
+.vit-flower{
+  position:absolute;font-size:14px;
+  opacity:0;transition:opacity 2s;
+  animation:flowerSway 2s ease-in-out infinite alternate;
+}
+@keyframes flowerSway{0%{transform:rotate(-5deg)}100%{transform:rotate(5deg)}}
+
+/* ═══ ZONES ═══ */
+.zone{position:absolute;cursor:pointer;transition:transform .15s;z-index:10}
+.zone:hover{transform:scale(1.05)}
+.zone:hover .zone-tip{opacity:1}
+.zone-tip{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  background:rgba(0,0,0,.9);color:var(--gold);
+  border:2px solid var(--gold);padding:2px 5px;
+  opacity:0;transition:opacity .2s;
+  white-space:nowrap;text-align:center;
+  margin-bottom:4px;
+}
+.zone-label{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  background:var(--gold);color:#000;
+  border:2px solid var(--gold-drk);
+  padding:2px 4px;text-align:center;
+  white-space:nowrap;margin-top:2px;
+}
+/* Building components */
+.bld{display:flex;flex-direction:column;align-items:center}
+.bld-roof{width:0;height:0;border-left:solid transparent;border-right:solid transparent;border-bottom:solid}
+.bld-wall{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;padding-bottom:3px}
+.bld-win{background:var(--xp);border:2px solid #aaa;box-shadow:0 0 5px var(--xp);animation:winBlink 4s ease-in-out infinite}
+@keyframes winBlink{0%,88%,100%{opacity:1}94%{opacity:.2}}
+.bld-door{background:#111;border:2px solid #333}
+.win-row{display:flex;gap:4px;margin-bottom:5px}
+
+/* Zone positions — 4 depth rows, full spread across map */
+/* ROW A — background center landmark (top:18%) */
+#zone-dorm {left:50%;top:18%;transform:translateX(-50%)}
+
+/* ROW B — mid-background left/right (top:29%) */
+#zone-gym  {left:1%; top:29%}
+#zone-cafe {right:1%;top:29%}
+
+/* ROW C — mid-foreground left/right (top:38%) */
+#zone-track{left:20%;top:38%}
+#zone-zen  {right:18%;top:38%}
+
+/* ROW D — foreground road-level (top:50%) */
+#zone-water{left:5%; top:50%}
+#zone-lib  {right:5%;top:50%}
+
+.track-inner{position:absolute;top:8px;left:8px;right:8px;bottom:8px;background:#3d8b3d;border:2px solid #2d6b2d}
+.track-ln{position:absolute;top:50%;left:0;right:0;height:2px;background:rgba(232,212,77,.5)}
+/* Water station */
+.water-kiosk{width:52px;height:60px;background:#1a3a5c;border:4px solid var(--xp);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.water-jug{width:22px;height:28px;background:rgba(100,200,255,.5);border:3px solid var(--xp);position:relative;overflow:hidden}
+.water-lvl{position:absolute;bottom:0;left:0;right:0;height:50%;background:rgba(0,180,255,.6);animation:waterAnim 2s ease-in-out infinite alternate}
+@keyframes waterAnim{0%{height:30%}100%{height:65%}}
+/* Zen garden */
+.zen-box{width:76px;height:60px;background:#c8dba0;border:4px solid #5d8a32;position:relative;overflow:hidden}
+.zen-lines{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent,transparent 7px,rgba(100,80,40,.2) 8px)}
+.zen-rk{position:absolute;background:#777;border:2px solid #444}
+.zen-t .trunk{width:7px;height:14px;background:#5D4037;margin:0 auto}
+.zen-t .top  {width:22px;height:18px;background:#4CAF50;border:3px solid #388E3C}
+
+/* ═══ BILLBOARDS ═══ */
+.billboard{
+  position:absolute;z-index:8;
+  display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;transition:transform .15s;
+}
+.billboard:hover{transform:scale(1.06) translateY(-3px)}
+.bb-pole{width:10px;background:linear-gradient(180deg,#aaa,#666);border:2px solid #444}
+.bb-board{
+  border:5px solid #888;
+  box-shadow:4px 4px 0 #000,0 0 16px rgba(255,255,255,.1);
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:8px 10px;text-align:center;
+  font-family:'Press Start 2P',monospace;
+  position:relative;overflow:hidden;
+}
+/* animated shimmer on billboard */
+.bb-board::after{
+  content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent);
+  animation:bbShimmer 3s ease-in-out infinite;
+}
+@keyframes bbShimmer{0%{left:-100%}100%{left:160%}}
+.bb-tag{font-size:6px;color:var(--gray);margin-top:3px;font-family:'Press Start 2P',monospace}
+.bb-body{font-size:8px;color:var(--white);line-height:1.6}
+.bb-icon{font-size:22px;margin-bottom:4px}
+.bb-price{font-size:7px;color:var(--gold);margin-top:3px}
+
+/* Billboards: positioned in the MID zone, NOT bottom-anchored */
+#bb1{left:8%; top:42%}
+#bb2{left:50%;top:38%;transform:translateX(-50%)}
+#bb3{right:7%;top:42%}
+
+/* Wall signs on buildings — use top:% positioning */
+.wall-sign{
+  position:absolute;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  padding:3px 6px;border:2px solid;
+  white-space:nowrap;z-index:12;
+  animation:signGlow 2s ease-in-out infinite alternate;
+  pointer-events:none;
+}
+@keyframes signGlow{0%{opacity:.7}100%{opacity:1}}
+
+/* Street banners */
+.street-banner{
+  position:absolute;z-index:12;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  padding:4px 10px;
+  border:2px solid;
+  animation:bannerFloat 3s ease-in-out infinite alternate;
+  white-space:nowrap;cursor:pointer;
+}
+@keyframes bannerFloat{0%{transform:translateY(0)}100%{transform:translateY(-4px)}}
+
+/* ═══ AVATARS ═══ */
+.avatar{
+  position:absolute;z-index:20;
+  display:flex;flex-direction:column;align-items:center;
+  cursor:pointer;
+  transition:left 1.8s ease-in-out,top 1.8s ease-in-out;
+}
+.avatar:hover .av-popup{display:flex}
+.av-sprite{
+  position:relative;
+  animation:avBob .7s ease-in-out infinite alternate;
+}
+@keyframes avBob{0%{transform:translateY(0)}100%{transform:translateY(-3px)}}
+/* Pixel character parts */
+.av-head{position:relative;border:3px solid #000;margin:0 auto}
+.av-eye{position:absolute;background:#000}
+.av-body{border:3px solid #000;margin:-2px auto 0}
+.av-legs{display:flex;gap:2px;margin-top:-2px}
+.av-leg{border:3px solid #000}
+/* walking animation for bots */
+.av-walk .av-leg:nth-child(1){animation:legL .5s ease-in-out infinite alternate}
+.av-walk .av-leg:nth-child(2){animation:legR .5s ease-in-out infinite alternate}
+@keyframes legL{0%{transform:translateY(-2px)}100%{transform:translateY(2px)}}
+@keyframes legR{0%{transform:translateY(2px)} 100%{transform:translateY(-2px)}}
+
+.av-act-ico{
+  position:absolute;top:-16px;left:50%;transform:translateX(-50%);
+  font-size:13px;
+  animation:actIco .8s ease-in-out infinite alternate;
+}
+@keyframes actIco{0%{transform:translateX(-50%) scale(1)}100%{transform:translateX(-50%) scale(1.2)}}
+.av-lvl-badge{
+  position:absolute;top:-7px;right:-7px;
+  background:var(--gold);color:#000;
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  padding:2px 3px;border:2px solid var(--gold-drk);z-index:2;
+}
+.av-name{
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  background:rgba(0,0,0,.85);color:var(--white);
+  border:1px solid var(--navy-rim);padding:1px 3px;
+  margin-top:2px;white-space:nowrap;
+}
+/* Popup card */
+.av-popup{
+  display:none;
+  position:absolute;bottom:54px;left:50%;transform:translateX(-50%);
+  background:var(--navy-mid);border:3px solid var(--gold);
+  box-shadow:4px 4px 0 #000;padding:8px;
+  min-width:130px;flex-direction:column;gap:4px;z-index:50;
+}
+.apc-name{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold);text-align:center;margin-bottom:3px}
+.apc-row{display:flex;justify-content:space-between;font-size:16px;gap:8px}
+.apc-row span:last-child{color:var(--gold)}
+.apc-xpbar{width:100%;height:6px;background:#222;border:2px solid var(--navy-rim);margin-top:3px}
+.apc-xpfill{height:100%;background:var(--xp);transition:width .4s}
+
+/* ═══ WORLD HUD ═══ */
+#world-hud{
+  position:absolute;bottom:56px;left:0;right:0;
+  background:linear-gradient(0deg,rgba(13,27,42,.97) 85%,transparent);
+  padding:8px 14px 10px;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  z-index:30;
+}
+.whud-player{display:flex;align-items:center;gap:10px}
+.whud-mini-sprite{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.whud-info{display:flex;flex-direction:column;gap:3px;min-width:130px}
+.whud-name{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold)}
+.whud-rank{font-size:16px;color:var(--xp)}
+.whud-xprow{display:flex;flex-direction:column;gap:1px}
+.whud-xplbl{font-size:14px;color:var(--gray)}
+.whud-bar{width:130px;height:10px;background:#111;border:2px solid var(--navy-rim)}
+.whud-fill{
+  height:100%;
+  background:linear-gradient(90deg,var(--xp-drk),var(--xp));
+  transition:width .6s ease;position:relative;
+}
+.whud-fill::after{content:'';position:absolute;right:0;top:0;bottom:0;width:4px;background:#fff;opacity:.6;animation:shimmer 1.2s ease-in-out infinite}
+@keyframes shimmer{0%,100%{opacity:.6}50%{opacity:.1}}
+.whud-pills{display:flex;gap:6px;align-items:center}
+.whud-pill{
+  background:var(--navy-lt);border:2px solid var(--navy-rim);
+  padding:3px 8px;font-size:17px;
+  display:flex;gap:3px;align-items:center;
+}
+.whud-pill span{color:var(--gold);font-size:18px}
+.whud-streak{display:flex;flex-direction:column;align-items:center;gap:1px}
+.wstr-fire{font-size:22px;animation:firePop .7s ease-in-out infinite alternate}
+@keyframes firePop{0%{transform:scale(1);filter:brightness(1)}100%{transform:scale(1.15);filter:brightness(1.3)}}
+.wstr-num{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--orange)}
+.wstr-lbl{font-size:13px;color:var(--gray)}
+.whud-strike{display:flex;flex-direction:column;align-items:center;gap:1px}
+.wstk-ico{font-size:20px;animation:lightning .9s ease-in-out infinite alternate}
+@keyframes lightning{0%{filter:brightness(1)}100%{filter:brightness(1.5) drop-shadow(0 0 6px gold)}}
+.wstk-num{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold)}
+.wstk-lbl{font-size:13px;color:var(--gray)}
+
+/* Time display */
+#world-time{
+  position:absolute;top:8px;right:10px;z-index:35;
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  background:rgba(0,0,0,.7);color:var(--gold);
+  border:2px solid var(--navy-rim);padding:3px 7px;
+}
+
+/* Campus vitality bar */
+#vit-bar-wrap{
+  position:absolute;top:8px;left:10px;z-index:35;
+  display:flex;flex-direction:column;gap:2px;
+}
+#vit-label{font-family:'Press Start 2P',monospace;font-size:5px;color:var(--green)}
+#vit-bar{width:100px;height:8px;background:#111;border:2px solid var(--navy-rim)}
+#vit-fill{height:100%;background:linear-gradient(90deg,#228B00,var(--green));transition:width 1s}
+
+/* ═══════════════════════════════════════════════
+   SCREEN: LOG HABIT (placeholder — Chunk 2)
+═══════════════════════════════════════════════ */
+#screen-log{padding:16px}
+.ph-wrap{
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;padding:40px 16px;gap:12px;text-align:center;
+}
+.ph-ico{font-size:56px}
+.ph-title{font-family:'Press Start 2P',monospace;font-size:11px;color:var(--gold)}
+.ph-sub{font-size:22px;color:var(--gray)}
+.ph-badge{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  background:var(--navy-lt);border:3px solid var(--navy-rim);
+  color:var(--xp);padding:8px 16px;margin-top:4px;
+}
+.ph-features{
+  background:var(--navy-mid);border:3px solid var(--navy-rim);
+  padding:14px;text-align:left;max-width:400px;width:100%;
+}
+.ph-features h3{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold);margin-bottom:10px}
+.ph-feat{font-size:18px;padding:3px 0;border-bottom:1px solid var(--navy-lt);color:var(--white)}
+.ph-feat:last-child{border-bottom:none}
+
+/* ═══════════════════════════════════════════════
+   SCREEN: SOCIAL (placeholder — Chunk 3)
+═══════════════════════════════════════════════ */
+#screen-social{padding:16px}
+
+/* ═══════════════════════════════════════════════
+   SCREEN: REWARDS (placeholder — Chunk 3)
+═══════════════════════════════════════════════ */
+#screen-rewards{padding:16px}
+
+/* ═══════════════════════════════════════════════
+   SCREEN: ME / HERO
+═══════════════════════════════════════════════ */
+#screen-me{padding:16px}
+.hero-card{
+  background:var(--navy-mid);
+  max-width:500px;margin:0 auto;
+  padding:18px;
+}
+.hero-top{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px}
+.hero-sprite-wrap{
+  width:70px;height:88px;flex-shrink:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  background:var(--navy-lt);border:3px solid var(--navy-rim);
+  padding-bottom:4px;position:relative;
+}
+.hero-lvl-crown{
+  position:absolute;top:-10px;left:50%;transform:translateX(-50%);
+  font-family:'Press Start 2P',monospace;font-size:5px;
+  background:var(--gold);color:#000;padding:2px 4px;border:2px solid var(--gold-drk);
+  white-space:nowrap;
+}
+.hero-info{flex:1;display:flex;flex-direction:column;gap:7px}
+.hi-row{display:flex;justify-content:space-between;font-size:19px;padding:3px 0;border-bottom:2px solid var(--navy-lt)}
+.hi-lbl{color:var(--gray)}
+.hi-val{color:var(--white)}
+.hi-val.gold{color:var(--gold)}
+.hi-val.blue{color:var(--xp)}
+.hi-val.green{color:var(--green)}
+.xp-bar-full{width:100%;height:12px;background:#111;border:3px solid var(--navy-rim);margin-top:2px}
+.xp-bar-fill{height:100%;background:linear-gradient(90deg,var(--xp-drk),var(--xp));transition:width .6s}
+.xp-bar-lbl{font-size:15px;color:var(--gray);margin-top:2px}
+
+/* Name setup */
+.name-setup{
+  background:var(--navy-mid);max-width:500px;margin:14px auto 0;padding:16px;
+}
+.name-setup h3{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold);margin-bottom:10px}
+.name-row{display:flex;gap:8px}
+#name-input{
+  flex:1;background:var(--navy-lt);border:3px solid var(--navy-rim);
+  color:var(--white);font-family:'VT323',monospace;font-size:22px;
+  padding:5px 10px;outline:none;
+}
+#name-input:focus{border-color:var(--gold)}
+
+/* Quick stats grid */
+.stats-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;
+  max-width:500px;margin:14px auto 0;
+}
+.sg-card{
+  background:var(--navy-mid);border:3px solid var(--navy-rim);
+  padding:12px;text-align:center;
+}
+.sg-ico{font-size:28px;margin-bottom:4px}
+.sg-val{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold)}
+.sg-lbl{font-size:16px;color:var(--gray)}
+
+/* ═══════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════════ */
+#toasts{
+  position:fixed;top:52px;right:12px;z-index:999;
+  display:flex;flex-direction:column;gap:6px;pointer-events:none;
+  max-width:220px;
+}
+.toast{
+  background:var(--navy-mid);border:3px solid var(--gold);
+  box-shadow:4px 4px 0 #000;
+  padding:9px 14px;
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  color:var(--gold);
+  animation:toastIn .25s ease, toastOut .25s ease 2.7s forwards;
+}
+.toast .t-ico{font-size:18px;display:block;margin-bottom:3px}
+.toast .t-msg{color:var(--white);font-size:5px;margin-top:2px;font-family:'VT323',monospace;font-size:16px}
+@keyframes toastIn {from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(110%);opacity:0}}
+
+/* ═══════════════════════════════════════════════
+   LEVEL UP OVERLAY
+═══════════════════════════════════════════════ */
+#lvlup{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.88);z-index:600;
+  align-items:center;justify-content:center;
+  flex-direction:column;
+}
+#lvlup.show{display:flex}
+.lu-box{
+  background:var(--navy-mid);
+  border:6px solid var(--gold);
+  box-shadow:0 0 50px rgba(255,215,0,.6),8px 8px 0 #000;
+  padding:36px 52px;text-align:center;
+  animation:luPop .5s cubic-bezier(.36,.07,.19,.97) both;
+}
+@keyframes luPop{0%{transform:scale(.2) rotate(-8deg);opacity:0}60%{transform:scale(1.1) rotate(2deg);opacity:1}100%{transform:scale(1) rotate(0);opacity:1}}
+.lu-title{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold);text-shadow:0 0 20px var(--gold);margin-bottom:6px}
+.lu-num  {font-family:'Press Start 2P',monospace;font-size:52px;color:var(--white);text-shadow:4px 4px 0 #000,0 0 30px var(--xp)}
+.lu-rank {font-size:26px;color:var(--xp);margin-top:6px}
+.lu-sub  {font-size:20px;color:var(--gray);margin:10px 0 18px}
+/* Particles */
+#ptcls{position:fixed;inset:0;pointer-events:none;z-index:599}
+.ptcl{
+  position:absolute;width:8px;height:8px;
+  animation:ptclFly var(--dur,1s) ease-out forwards;
+}
+@keyframes ptclFly{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+
+/* ═══════════════════════════════════════════════
+   DEMO MODE BUTTON (floating)
+═══════════════════════════════════════════════ */
+#demo-btn{
+  position:fixed;bottom:76px;right:12px;z-index:400;
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  background:var(--purple);color:#fff;
+  border:4px solid #6a1a8a;
+  box-shadow:4px 4px 0 #000;
+  padding:8px 10px;cursor:pointer;
+  animation:demoPulse 2s ease-in-out infinite;
+}
+#demo-btn:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 #000}
+@keyframes demoPulse{0%,100%{box-shadow:4px 4px 0 #000}50%{box-shadow:4px 4px 16px rgba(155,89,182,.7)}}
+
+/* ═══════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════ */
+@media(max-width:480px){
+  .whud-pills{display:none}
+  .whud-bar{width:90px}
+  #bb2{display:none}
+  .logo{font-size:7px}
+}
+
+/* ═══════════════════════════════════════════════
+   CHUNK 2 — LOG HABIT STYLES
+═══════════════════════════════════════════════ */
+@keyframes flashIn{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* Category tabs */
+.cat-tab{
+  font-family:'Press Start 2P',monospace;font-size:9px;
+  background:var(--navy-lt);border:3px solid var(--navy-rim);
+  color:var(--gray);padding:6px 10px;cursor:pointer;
+  transition:all .15s;flex:1;min-width:42px;
+}
+.cat-tab:hover{background:var(--navy-rim);color:var(--white)}
+.cat-tab.active{background:var(--navy-mid);border-color:var(--gold);color:var(--gold);box-shadow:0 0 8px rgba(255,215,0,.3)}
+
+/* Category panels */
+.cat-panel{display:none}
+.cat-panel.active{display:block}
+
+/* Log card */
+.log-card{
+  background:var(--navy-mid);border:3px solid var(--navy-rim);
+  padding:14px;margin-bottom:8px;
+}
+.log-card-title{font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold);margin-bottom:4px}
+.log-card-sub{font-size:17px;color:var(--gray);margin-bottom:12px}
+
+/* Quick buttons */
+.quick-btns{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.quick-btn{
+  font-family:'Press Start 2P',monospace;font-size:7px;
+  background:var(--xp-drk);color:#fff;
+  border:3px solid var(--xp);padding:6px 10px;cursor:pointer;
+  box-shadow:3px 3px 0 #000;transition:all .1s;flex:1;
+}
+.quick-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+.quick-btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #000}
+
+/* Water meter */
+.water-meter-wrap{margin-top:8px}
+.water-meter-bar{width:100%;height:14px;background:#111;border:3px solid var(--navy-rim);overflow:hidden}
+
+/* Log input */
+.log-input{
+  width:100%;background:var(--navy-lt);border:3px solid var(--navy-rim);
+  color:var(--white);font-family:'VT323',monospace;font-size:20px;
+  padding:5px 8px;outline:none;
+}
+.log-input:focus{border-color:var(--gold)}
+select.log-input{cursor:pointer}
+
+/* XP preview */
+.xp-preview{
+  margin-top:10px;padding:6px 8px;
+  background:var(--navy-lt);border-left:4px solid var(--xp);
+  font-size:16px;color:var(--xp);
+}
+
+/* Exercise buttons */
+.ex-btn{
+  font-family:'Press Start 2P',monospace;font-size:6px;
+  background:var(--navy-lt);border:3px solid var(--navy-rim);
+  color:var(--gray);padding:7px 6px;cursor:pointer;
+  transition:all .15s;text-align:center;
+}
+.ex-btn:hover{background:var(--navy-rim);color:var(--white)}
+.ex-btn.active{background:var(--navy-mid);border-color:var(--green);color:var(--green);box-shadow:0 0 8px rgba(57,255,20,.3)}
+
+/* Meal buttons */
+.meal-btn{
+  background:var(--navy-lt);border:3px solid var(--navy-rim);
+  color:var(--white);font-family:'Press Start 2P',monospace;font-size:7px;
+  padding:10px 8px;cursor:pointer;text-align:center;
+  transition:all .15s;line-height:1.6;
+}
+.meal-btn:hover{border-color:var(--gold);background:var(--navy-mid)}
+.meal-btn:active{transform:scale(.97)}
+
+/* Star buttons */
+.star-btn{
+  background:transparent;border:none;font-size:18px;cursor:pointer;
+  transition:transform .15s;
+}
+.star-btn:hover{transform:scale(1.3)}
+.star-btn.active{filter:drop-shadow(0 0 4px gold)}
+
+/* Calculator rows */
+.calc-row{
+  display:flex;justify-content:space-between;
+  font-size:18px;padding:4px 0;
+  border-bottom:2px solid var(--navy-rim);
+}
+.calc-row span:first-child{color:var(--gray)}
+.calc-row span:last-child{color:var(--white)}
+
+/* Quest cards */
+.quest-card{
+  background:var(--navy-mid);border:3px solid var(--navy-rim);
+  padding:10px 12px;
+}
+.quest-card.done{border-color:var(--green);opacity:.7}
+.quest-title{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--white);margin-bottom:4px}
+.quest-desc{font-size:17px;color:var(--gray);margin-bottom:6px}
+.quest-prog-bar{width:100%;height:8px;background:#111;border:2px solid var(--navy-rim);margin-bottom:6px}
+.quest-prog-fill{height:100%;background:linear-gradient(90deg,var(--xp-drk),var(--xp));transition:width .5s}
+.quest-prog-fill.done-fill{background:linear-gradient(90deg,var(--green-drk),var(--green))}
+.quest-reward{font-size:15px;color:var(--gold)}
+.quest-done-badge{font-family:'Press Start 2P',monospace;font-size:6px;color:var(--green);margin-top:4px}
+
+/* XP Fly animation */
+.xp-fly{
+  position:fixed;pointer-events:none;z-index:800;
+  font-family:'Press Start 2P',monospace;font-size:14px;
+  color:var(--gold);text-shadow:2px 2px 0 #000;
+  animation:xpFly 1.4s ease-out forwards;
+}
+@keyframes xpFly{
+  0%  {transform:translateY(0) scale(1);opacity:1}
+  100%{transform:translateY(-80px) scale(1.3);opacity:0}
+}
+.coin-fly{
+  position:fixed;pointer-events:none;z-index:800;
+  font-size:22px;
+  animation:xpFly 1.2s ease-out forwards;
+  animation-delay:.2s;opacity:0;
+}
+
+/* ─ Daily XP target bar ─ */
+#daily-xp-bar-wrap{background:var(--navy-lt);border:3px solid var(--navy-rim);padding:8px 12px;margin-bottom:10px}
+.dxp-row{display:flex;justify-content:space-between;font-size:16px;margin-bottom:4px}
+.dxp-lbl{color:var(--gray)}.dxp-val{color:var(--gold);font-family:'Press Start 2P',monospace;font-size:8px}
+.dxp-bar{width:100%;height:10px;background:#111;border:2px solid var(--navy-rim)}
+.dxp-fill{height:100%;background:linear-gradient(90deg,var(--gold-drk),var(--gold));transition:width .5s}
+/* ─ Exercise history ─ */
+.ex-history{background:var(--navy-lt);border:2px solid var(--navy-rim);padding:6px 8px;margin-top:8px;font-size:15px}
+.ex-hist-row{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px solid var(--navy-rim);color:var(--gray)}
+.ex-hist-row:last-child{border-bottom:none}
+.ex-hist-row span{color:var(--white)}
+/* ─ Bot companion button ─ */
+.bot-companion-btn{background:var(--navy-lt);border:3px solid var(--purple);color:var(--purple);font-family:'Press Start 2P',monospace;font-size:6px;padding:7px 10px;cursor:pointer;width:100%;margin-top:8px;transition:all .15s}
+.bot-companion-btn:hover{background:var(--purple);color:#fff;box-shadow:0 0 12px rgba(155,89,182,.5)}
+/* ─ Combo flash ─ */
+#combo-flash{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);font-family:'Press Start 2P',monospace;font-size:18px;color:var(--orange);text-shadow:3px 3px 0 #000,0 0 20px var(--orange);z-index:850;pointer-events:none;animation:comboAnim .8s ease-out forwards}
+@keyframes comboAnim{0%{transform:translate(-50%,-50%) scale(.5);opacity:0}40%{transform:translate(-50%,-60%) scale(1.3);opacity:1}100%{transform:translate(-50%,-80%) scale(1);opacity:0}}
+/* ─ Early Bird badge ─ */
+#earlybird-badge{display:none;background:var(--orange);color:#000;font-family:'Press Start 2P',monospace;font-size:6px;padding:3px 8px;border:2px solid #CC6600;margin-bottom:8px;text-align:center}
+/* ─ Streak save button ─ */
+.streak-save-btn{background:var(--orange);color:#000;font-family:'Press Start 2P',monospace;font-size:6px;border:3px solid #CC6600;box-shadow:3px 3px 0 #000;padding:6px 12px;cursor:pointer;width:100%;margin-top:6px}
+.streak-save-btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 #000}
+/* ─ Calc applied badge ─ */
+#calc-applied-badge{display:none;background:var(--green-drk);color:var(--green);font-family:'Press Start 2P',monospace;font-size:6px;border:2px solid var(--green);padding:4px 8px;text-align:center;margin-top:6px}
+/* ─ Star fix ─ */
+.star-btn.lit{color:#FFD700;filter:drop-shadow(0 0 6px #FFD700);transform:scale(1.1)}
+
+/* ═══ CHUNK 3 CSS ═══ */
+/* Social sub-tabs */
+.soc-tab{font-family:'Press Start 2P',monospace;font-size:6px;flex:1;padding:7px 4px;cursor:pointer;background:var(--navy-lt);border:3px solid var(--navy-rim);color:var(--gray);transition:all .15s;text-align:center}
+.soc-tab:hover{background:var(--navy-rim);color:var(--white)}
+.soc-tab.active{background:var(--navy-mid);border-color:var(--gold);color:var(--gold)}
+.soc-panel{display:none}.soc-panel.active{display:block}
+/* Leaderboard rows */
+.lb-row{background:var(--navy-mid);border:3px solid var(--navy-rim);padding:10px 12px;display:flex;align-items:center;gap:10px;transition:border-color .3s}
+.lb-row.player-row{border-color:var(--gold);box-shadow:0 0 10px rgba(255,215,0,.2)}
+.lb-row.rank-1{border-color:var(--gold)}
+.lb-row.rank-2{border-color:#C0C0C0}
+.lb-row.rank-3{border-color:#CD7F32}
+.lb-rank{font-family:'Press Start 2P',monospace;font-size:12px;width:28px;text-align:center;flex-shrink:0}
+.lb-sprite{width:28px;height:36px;flex-shrink:0;display:flex;flex-direction:column;align-items:center}
+.lb-info{flex:1}
+.lb-name{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--white);margin-bottom:3px}
+.lb-sub{font-size:15px;color:var(--gray)}
+.lb-xp{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);text-align:right;flex-shrink:0}
+.lb-xp-bar{width:100%;height:4px;background:#111;border:1px solid var(--navy-rim);margin-top:3px}
+.lb-xp-fill{height:100%;background:var(--xp);transition:width .5s}
+.lb-change{font-size:13px;width:20px;text-align:center;flex-shrink:0}
+/* Exercise lb tabs */
+.exlb-tab{font-family:'Press Start 2P',monospace;font-size:5px;padding:5px 7px;cursor:pointer;background:var(--navy-lt);border:2px solid var(--navy-rim);color:var(--gray);transition:all .15s}
+.exlb-tab:hover{background:var(--navy-rim);color:var(--white)}
+.exlb-tab.active{border-color:var(--green);color:var(--green);background:var(--navy-mid)}
+/* Badge cards */
+.badge-card{background:var(--navy-mid);border:3px solid var(--navy-rim);padding:12px;text-align:center;transition:all .3s;position:relative}
+.badge-card.unlocked{border-color:var(--gold);box-shadow:0 0 12px rgba(255,215,0,.3)}
+.badge-card.locked{opacity:.5;filter:grayscale(0.7)}
+.badge-ico{font-size:32px;margin-bottom:6px}
+.badge-name{font-family:'Press Start 2P',monospace;font-size:6px;color:var(--white);margin-bottom:3px}
+.badge-desc{font-size:14px;color:var(--gray)}
+.badge-done{position:absolute;top:-6px;right:-6px;background:var(--gold);color:#000;font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 4px;border:2px solid var(--gold-drk)}
+/* Story cards */
+.story-card{background:var(--navy-mid);border:3px solid var(--navy-rim);padding:12px}
+.story-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.story-av{width:32px;height:40px;display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.story-name{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold)}
+.story-role{font-size:15px;color:var(--gray)}
+.story-quote{font-size:17px;color:var(--white);font-style:italic;line-height:1.5;border-left:3px solid var(--gold);padding-left:8px}
+.story-stats{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.story-stat{background:var(--navy-lt);border:2px solid var(--navy-rim);padding:3px 8px;font-size:15px;color:var(--xp)}
+/* Analytics */
+.ana-card{background:var(--navy-mid);border:3px solid var(--navy-rim);padding:10px;text-align:center}
+.ana-val{font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold)}
+.ana-lbl{font-size:15px;color:var(--gray);margin-top:2px}
+/* CSS Chart bars */
+.chart-bar-wrap{display:flex;flex-direction:column;align-items:center;flex:1}
+.chart-bar{width:100%;background:linear-gradient(0deg,var(--xp-drk),var(--xp));border:2px solid var(--xp);min-height:4px;transition:height .5s}
+.chart-bar.player-bar{background:linear-gradient(0deg,var(--gold-drk),var(--gold));border-color:var(--gold)}
+.chart-lbl{font-family:'Press Start 2P',monospace;font-size:4px;color:var(--gray);margin-top:3px;text-align:center;flex:1}
+/* Shop cards */
+.shop-coupon{background:var(--navy-mid);border:3px solid var(--navy-rim);padding:12px;display:flex;justify-content:space-between;align-items:center}
+.shop-coupon.locked{opacity:.5}
+.coupon-info{flex:1}
+.coupon-name{font-family:'Press Start 2P',monospace;font-size:7px;color:var(--white);margin-bottom:4px}
+.coupon-desc{font-size:16px;color:var(--gray)}
+.coupon-price{font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);margin-left:10px;flex-shrink:0}
+.shop-cosm{background:var(--navy-mid);border:3px solid var(--navy-rim);padding:10px;text-align:center}
+.cosm-ico{font-size:28px;margin-bottom:4px}
+.cosm-name{font-family:'Press Start 2P',monospace;font-size:5px;color:var(--white);margin-bottom:4px}
+.cosm-price{font-size:15px;color:var(--gold)}
+.cosm-tag{font-size:12px;color:var(--purple);margin-top:2px}
+
+/* ═══ CHUNK 4 — POLISH CSS ═══ */
+/* Onboarding */
+.onboard-step{animation:fadeSlide .25s ease}
+@keyframes fadeSlide{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+.ob-dot{width:8px;height:8px;background:var(--navy-rim);border:2px solid var(--navy-rim);border-radius:0;transition:all .2s}
+.ob-dot.active{background:var(--gold);border-color:var(--gold);width:20px}
+/* Tooltip pulse on world zones */
+.zone-tip-pulse .zone-tip{opacity:1;animation:tipPulse 1.5s ease-in-out infinite}
+@keyframes tipPulse{0%,100%{border-color:var(--gold)}50%{border-color:var(--green)}}
+/* Mobile nav label */
+@media(max-width:360px){.bnav{font-size:4px}.bnav .bico{font-size:17px}}
+/* Smooth screen transitions */
+.screen{animation:screenFade .2s ease}
+@keyframes screenFade{from{opacity:0}to{opacity:1}}
+/* Demo mode overlay */
+#demo-progress{display:none;position:fixed;top:52px;left:0;right:0;z-index:800;
+  background:var(--purple);height:6px;transition:width .5s}
+/* Header glow when high level */
+.header-glow{box-shadow:0 2px 16px rgba(255,215,0,.4)!important}
+/* Impact card animate */
+#impact-card{animation:fadeSlide .4s ease}
+/* Quick boost flash */
+@keyframes boostFlash{0%,100%{background:var(--navy)}50%{background:rgba(57,255,20,.15)}}
+.boost-flash{animation:boostFlash .4s ease 3}
+/* Scrollbar dark theme */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--navy)}
+::-webkit-scrollbar-thumb{background:var(--navy-rim)}
+::-webkit-scrollbar-thumb:hover{background:var(--border)}
+/* Responsive: hide demo btn on very small screens */
+@media(max-width:320px){#demo-btn{display:none}}
+
+</style>
+</head>
+<body>
+<!-- Demo progress bar -->
+<div id="demo-progress" style="display:none;position:fixed;top:44px;left:0;z-index:800;background:var(--purple);height:5px;transition:width .5s ease"></div>
+
+<!-- ════════════════════ HEADER ════════════════════ -->
+<header id="header">
+  <div class="logo">⚔️ Vital<span>Quest</span> HIT</div>
+  <div id="hdr-stats">
+    <div class="hstat">⭐ <b id="h-xp">0</b> XP</div>
+    <div class="hstat">🪙 <b id="h-coins">0</b></div>
+    <div class="hstat">⚡ <b id="h-strikes">0</b></div>
+    <div class="hstat">Lv <b id="h-level">1</b></div>
+  </div>
+</header>
+
+<!-- ════════════════ SCREEN: WORLD ════════════════ -->
+<div id="screen-world" class="screen active">
+
+  <!-- Sky -->
+  <div id="world-sky" class="sky-day">
+    <div id="stars"></div>
+    <div id="celestial" class="sun-obj"></div>
+    <!-- Clouds -->
+    <div class="cloud" style="width:52px;top:14%;animation-duration:42s;animation-delay:-8s;left:-60px"></div>
+    <div class="cloud" style="width:70px;top:22%;animation-duration:58s;animation-delay:-22s;left:25%"></div>
+    <div class="cloud" style="width:38px;top:9%; animation-duration:36s;animation-delay:-14s;left:65%"></div>
+  </div>
+
+  <!-- Scrolling Ad Ticker — always visible in sky area -->
+  <div id="ad-ticker" style="
+    position:absolute;top:10px;left:0;right:0;z-index:25;
+    background:rgba(0,0,0,.7);border-top:2px solid var(--gold);border-bottom:2px solid var(--gold);
+    padding:4px 0;overflow:hidden;white-space:nowrap;
+  ">
+    <div style="display:inline-block;animation:tickerScroll 22s linear infinite;font-family:'Press Start 2P',monospace;font-size:6px;color:var(--gold)">
+      &nbsp;&nbsp;&nbsp;📢 HIT CAFÉ — Healthy meals daily · Use WellCoins for 10% OFF!
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;💪 SPORTZONE GYM — Student discount available · Unlock at Level 3!
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;💧 AQUAFRESH — Stay hydrated, earn XP! Free bottle at 1500 🪙
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;🎁 VITALQUEST SOUVENIR SHOP — Redeem coins for real merch!
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;⭐ LOG DAILY HABITS → EARN XP → LEVEL UP → GET REWARDS!
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+    </div>
+  </div>
+  <style>
+  @keyframes tickerScroll{from{transform:translateX(100vw)}to{transform:translateX(-100%)}}
+  </style>
+
+  <!-- Time + Vitality overlays -->
+  <div id="world-time">🕐 --:--</div>
+  <div id="vit-bar-wrap">
+    <div id="vit-label">🌿 CAMPUS VITALITY</div>
+    <div id="vit-bar"><div id="vit-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- Ground -->
+  <div id="ground-grass" class="grass-day"></div>
+  <div id="ground-main"></div>
+  <div id="road"></div>
+
+  <!-- Campus transformation layer -->
+  <div id="campus-vitality">
+    <!-- Trees appear at 1000 XP -->
+    <div class="vit-trees" id="vit-trees" style="left:10px;bottom:66px">
+      <div><div class="vit-tree-top" style="background:#4CAF50"></div><div class="vit-tree-trunk"></div></div>
+      <div><div class="vit-tree-top" style="background:#388E3C;width:24px;height:24px"></div><div class="vit-tree-trunk" style="height:20px"></div></div>
+      <div><div class="vit-tree-top"></div><div class="vit-tree-trunk"></div></div>
+    </div>
+    <!-- Flowers at 5000 XP -->
+    <div class="vit-flower" id="vit-flowers1" style="left:40%;bottom:68px">🌸</div>
+    <div class="vit-flower" id="vit-flowers2" style="left:55%;bottom:70px;animation-delay:.5s">🌺</div>
+    <div class="vit-flower" id="vit-flowers3" style="left:70%;bottom:67px;animation-delay:1s">🌻</div>
+    <!-- Festival at 10000 XP -->
+    <div class="vit-flower" id="vit-festival" style="left:30%;bottom:72px;font-size:20px;animation-delay:.3s">🎉</div>
+  </div>
+
+  <!-- ══════ ZONES ══════ -->
+  <!-- GYM -->
+  <div class="zone" id="zone-gym" onclick="visitZone('gym')">
+    <div class="zone-tip">Click to log Exercise!</div>
+    <div class="bld">
+      <div class="bld-roof" style="border-left-width:42px;border-right-width:42px;border-bottom-width:20px;border-bottom-color:#c0392b;border-left-color:transparent;border-right-color:transparent"></div>
+      <div class="bld-wall" style="background:#e74c3c;width:84px;height:50px">
+        <div class="win-row">
+          <div class="bld-win" style="width:11px;height:11px"></div>
+          <div class="bld-win" style="width:11px;height:11px;animation-delay:.6s"></div>
+          <div class="bld-win" style="width:11px;height:11px;animation-delay:1.2s"></div>
+        </div>
+        <div class="bld-door" style="width:15px;height:20px"></div>
+      </div>
+    </div>
+    <div class="zone-label">💪 GYM</div>
+  </div>
+
+  <!-- RUNNING TRACK -->
+  <div class="zone" id="zone-track" onclick="visitZone('track')">
+    <div class="zone-tip">Click to log Steps!</div>
+    <div class="track-oval">
+      <div class="track-inner"><div class="track-ln"></div></div>
+    </div>
+    <div class="zone-label">🏃 TRACK</div>
+  </div>
+
+  <!-- DORM -->
+  <div class="zone" id="zone-dorm" onclick="visitZone('dorm')">
+    <div class="zone-tip">Click to log Sleep!</div>
+    <div class="bld">
+      <div class="bld-roof" style="border-left-width:50px;border-right-width:50px;border-bottom-width:24px;border-bottom-color:#5d6d7e;border-left-color:transparent;border-right-color:transparent"></div>
+      <div class="bld-wall" style="background:#7f8c8d;width:100px;height:58px">
+        <div class="win-row">
+          <div class="bld-win" style="width:13px;height:13px;animation-delay:.4s"></div>
+          <div class="bld-win" style="width:13px;height:13px;animation-delay:.9s"></div>
+          <div class="bld-win" style="width:13px;height:13px;animation-delay:1.4s"></div>
+        </div>
+        <div class="bld-door" style="width:18px;height:24px"></div>
+      </div>
+    </div>
+    <div class="zone-label">🛏️ DORM</div>
+  </div>
+
+  <!-- ZEN GARDEN -->
+  <div class="zone" id="zone-zen" onclick="visitZone('zen')">
+    <div class="zone-tip">Click to log Mindfulness!</div>
+    <div class="zen-box">
+      <div class="zen-lines"></div>
+      <div class="zen-rk" style="width:14px;height:9px;top:18px;left:10px"></div>
+      <div class="zen-rk" style="width:9px; height:7px;top:32px;left:32px"></div>
+      <div class="zen-t" style="position:absolute;bottom:0;right:8px">
+        <div class="top"></div><div class="trunk"></div>
+      </div>
+    </div>
+    <div class="zone-label">🧘 ZEN</div>
+  </div>
+
+  <!-- CAFETERIA -->
+  <div class="zone" id="zone-cafe" onclick="visitZone('cafe')">
+    <div class="zone-tip">Click to log Nutrition!</div>
+    <div class="bld">
+      <div class="bld-roof" style="border-left-width:42px;border-right-width:42px;border-bottom-width:20px;border-bottom-color:#1a5276;border-left-color:transparent;border-right-color:transparent"></div>
+      <div class="bld-wall" style="background:#2980b9;width:84px;height:50px">
+        <div class="win-row">
+          <div class="bld-win" style="width:11px;height:11px;animation-delay:.3s"></div>
+          <div class="bld-win" style="width:11px;height:11px;animation-delay:.8s"></div>
+          <div class="bld-win" style="width:11px;height:11px;animation-delay:1.3s"></div>
+        </div>
+        <div class="bld-door" style="width:17px;height:20px"></div>
+      </div>
+    </div>
+    <div class="zone-label">🍱 CAFE</div>
+  </div>
+
+  <!-- WATER STATION -->
+  <div class="zone" id="zone-water" onclick="visitZone('water')">
+    <div class="zone-tip">Click to log Hydration!</div>
+    <div class="water-kiosk">
+      <div style="font-size:9px;font-family:'Press Start 2P',monospace;color:var(--xp)">H₂O</div>
+      <div class="water-jug"><div class="water-lvl"></div></div>
+    </div>
+    <div class="zone-label">💧 WATER</div>
+  </div>
+
+  <!-- LIBRARY -->
+  <div class="zone" id="zone-lib" onclick="visitZone('lib')">
+    <div class="zone-tip">Click to log Study Break!</div>
+    <div class="bld">
+      <div class="bld-roof" style="border-left-width:46px;border-right-width:46px;border-bottom-width:22px;border-bottom-color:#5b2d82;border-left-color:transparent;border-right-color:transparent"></div>
+      <div class="bld-wall" style="background:#7d3c98;width:92px;height:54px">
+        <div class="win-row">
+          <div class="bld-win" style="width:13px;height:13px;animation-delay:.2s"></div>
+          <div class="bld-win" style="width:13px;height:13px;animation-delay:.7s"></div>
+          <div class="bld-win" style="width:13px;height:13px;animation-delay:1.2s"></div>
+        </div>
+        <div class="bld-door" style="width:17px;height:22px"></div>
+      </div>
+    </div>
+    <div class="zone-label">📚 LIBRARY</div>
+  </div>
+
+  <!-- ══════ BILLBOARDS ══════ -->
+  <!-- BILLBOARD 1 — Café -->
+  <div class="billboard" id="bb1" onclick="bbClick('cafe')">
+    <div class="bb-board" style="background:#0d2a0d;border-color:#4CAF50;width:166px;height:88px;box-shadow:4px 4px 0 #000,0 0 24px rgba(76,175,80,.6)">
+      <div class="bb-icon">🍃</div>
+      <div class="bb-body" style="color:#4CAF50">HIT CAFÉ</div>
+      <div style="font-size:7px;color:var(--white);margin-top:2px">Healthy Meals Daily</div>
+      <div class="bb-price">🪙 USE WELLCOINS HERE</div>
+      <div class="bb-tag">📢 SPONSORED • TAP FOR +20 🪙</div>
+    </div>
+    <div class="bb-pole" style="height:48px"></div>
+  </div>
+
+  <!-- BILLBOARD 2 — Gym -->
+  <div class="billboard" id="bb2" onclick="bbClick('gym')">
+    <div class="bb-board" style="background:#0a0a2a;border-color:var(--xp);width:188px;height:96px;box-shadow:4px 4px 0 #000,0 0 30px rgba(0,191,255,.6)">
+      <div class="bb-icon">💪</div>
+      <div class="bb-body" style="color:var(--xp)">SPORTZONE GYM</div>
+      <div style="font-size:7px;color:var(--white);margin-top:2px">Student Discount Inside!</div>
+      <div class="bb-price">LV 3+ UNLOCKS GYM PASS</div>
+      <div class="bb-tag">📢 SPONSORED • TAP FOR +30 🪙</div>
+    </div>
+    <div class="bb-pole" style="height:56px"></div>
+  </div>
+
+  <!-- BILLBOARD 3 — AquaFresh -->
+  <div class="billboard" id="bb3" onclick="bbClick('aqua')">
+    <div class="bb-board" style="background:#0a1a2a;border-color:var(--gold);width:166px;height:88px;box-shadow:4px 4px 0 #000,0 0 24px rgba(255,215,0,.6)">
+      <div class="bb-icon">💧</div>
+      <div class="bb-body" style="color:var(--gold)">AQUAFRESH</div>
+      <div style="font-size:7px;color:var(--white);margin-top:2px">Stay Hydrated, Stay Strong!</div>
+      <div class="bb-price">FREE BOTTLE @ 1500 🪙</div>
+      <div class="bb-tag">📢 SPONSORED • TAP FOR +50 🪙</div>
+    </div>
+    <div class="bb-pole" style="height:32px"></div>
+  </div>
+
+  <!-- Wall signs match new building row positions -->
+  <!-- Gym sign: ROW B left -->
+  <div class="wall-sign" style="left:1%;top:48%;color:#ff6b6b;border-color:#ff6b6b;background:rgba(0,0,0,.8)">💪 GYM OPEN 6AM</div>
+  <!-- Cafe sign: ROW B right -->
+  <div class="wall-sign" style="right:1%;top:48%;color:#74b9ff;border-color:#74b9ff;background:rgba(0,0,0,.8)">🍱 CAFÉ • RM5 SET</div>
+  <!-- Library sign: ROW D right -->
+  <div class="wall-sign" style="right:5%;top:66%;color:#a29bfe;border-color:#a29bfe;background:rgba(0,0,0,.8)">📚 24H OPEN</div>
+  <!-- Dorm sign: ROW A center -->
+  <div class="wall-sign" style="left:50%;top:34%;transform:translateX(-50%);color:#b2bec3;border-color:#b2bec3;background:rgba(0,0,0,.8)">🛏️ CURFEW 12AM</div>
+  <!-- Zen sign: ROW C right -->
+  <div class="wall-sign" style="right:18%;top:55%;color:#55efc4;border-color:#55efc4;background:rgba(0,0,0,.8)">🧘 ZEN ZONE</div>
+
+  <!-- Street banners: on the road (top:57-60%), clearly visible, above HUD -->
+  <div class="street-banner" onclick="bbClick('cafe')"
+    style="left:32%;top:57%;background:rgba(76,175,80,.2);border-color:#4CAF50;color:#4CAF50">
+    🏃 LOG HABITS → EARN COINS
+  </div>
+  <div class="street-banner" onclick="bbClick('aqua')"
+    style="left:52%;top:59%;background:rgba(0,191,255,.2);border-color:var(--xp);color:var(--xp)">
+    💧 DRINK WATER → +XP
+  </div>
+
+  <!-- ══════ PLAYER AVATAR ══════ -->
+  <div class="avatar" id="av-player" style="left:44%;top:62%">
+    <div class="av-act-ico" id="player-act">🧍</div>
+    <div class="av-lvl-badge" id="player-lvl-badge">1</div>
+    <div class="av-sprite av-walk" id="player-sprite">
+      <div class="av-head" style="background:#FDBCB4;width:16px;height:14px">
+        <div class="av-eye l" style="width:3px;height:3px;top:4px;left:2px"></div>
+        <div class="av-eye r" style="width:3px;height:3px;top:4px;right:2px"></div>
+      </div>
+      <div class="av-body" style="background:#E74C3C;width:20px;height:14px"></div>
+      <div class="av-legs">
+        <div class="av-leg" style="background:#2C3E50;width:7px;height:9px"></div>
+        <div class="av-leg" style="background:#2C3E50;width:7px;height:9px"></div>
+      </div>
+    </div>
+    <div id="player-cosm-badge" style="display:none;position:absolute;top:-22px;right:-10px;font-size:16px;animation:actIco .8s ease-in-out infinite alternate"></div>
+    <div class="av-name" id="player-av-name">YOU</div>
+    <div class="av-popup" id="player-popup">
+      <div class="apc-name" id="pp-name">Student</div>
+      <div class="apc-row"><span>LVL</span><span id="pp-lvl">1</span></div>
+      <div class="apc-row"><span>XP</span><span id="pp-xp">0</span></div>
+      <div class="apc-row"><span>🪙</span><span id="pp-coins">0</span></div>
+      <div class="apc-row"><span>🔥</span><span id="pp-streak">0d</span></div>
+      <div class="apc-row"><span>⚡</span><span id="pp-strikes">0</span></div>
+      <div class="apc-row"><span>📍</span><span id="pp-zone">Campus</span></div>
+      <div class="apc-xpbar"><div class="apc-xpfill" id="pp-xpbar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- ══════ BOT AVATARS ══════ -->
+  <!-- Amir -->
+  <div class="avatar" id="av-b0" style="left:16%;top:64%">
+    <div class="av-act-ico" id="b0-act">🏋️</div>
+    <div class="av-sprite av-walk">
+      <div class="av-head" style="background:#C8A96E;width:16px;height:14px">
+        <div class="av-eye l" style="width:3px;height:3px;top:4px;left:2px"></div>
+        <div class="av-eye r" style="width:3px;height:3px;top:4px;right:2px"></div>
+      </div>
+      <div class="av-body" style="background:#27AE60;width:20px;height:14px"></div>
+      <div class="av-legs">
+        <div class="av-leg" style="background:#1a252f;width:7px;height:9px"></div>
+        <div class="av-leg" style="background:#1a252f;width:7px;height:9px"></div>
+      </div>
+    </div>
+    <div class="av-name">AMIR 💪</div>
+    <div class="av-popup">
+      <div class="apc-name">Amir HIT</div>
+      <div class="apc-row"><span>LVL</span><span id="b0-lvl">3</span></div>
+      <div class="apc-row"><span>XP</span><span id="b0-xp">320</span></div>
+      <div class="apc-row"><span>🔥</span><span id="b0-streak">5d</span></div>
+      <div class="apc-row"><span>📍</span><span id="b0-zone">Gym</span></div>
+      <div class="apc-xpbar"><div class="apc-xpfill" id="b0-bar" style="width:60%"></div></div>
+    </div>
+  </div>
+
+  <!-- Siti -->
+  <div class="avatar" id="av-b1" style="left:70%;top:62%">
+    <div class="av-act-ico" id="b1-act">🥗</div>
+    <div class="av-sprite av-walk">
+      <div class="av-head" style="background:#F0C080;width:16px;height:14px">
+        <div class="av-eye l" style="width:3px;height:3px;top:4px;left:2px"></div>
+        <div class="av-eye r" style="width:3px;height:3px;top:4px;right:2px"></div>
+      </div>
+      <div class="av-body" style="background:#E91E8C;width:20px;height:14px"></div>
+      <div class="av-legs">
+        <div class="av-leg" style="background:#4a235a;width:7px;height:9px"></div>
+        <div class="av-leg" style="background:#4a235a;width:7px;height:9px"></div>
+      </div>
+    </div>
+    <div class="av-name">SITI 🌸</div>
+    <div class="av-popup">
+      <div class="apc-name">Siti Wellness</div>
+      <div class="apc-row"><span>LVL</span><span id="b1-lvl">4</span></div>
+      <div class="apc-row"><span>XP</span><span id="b1-xp">410</span></div>
+      <div class="apc-row"><span>🔥</span><span id="b1-streak">7d</span></div>
+      <div class="apc-row"><span>📍</span><span id="b1-zone">Cafe</span></div>
+      <div class="apc-xpbar"><div class="apc-xpfill" id="b1-bar" style="width:75%"></div></div>
+    </div>
+  </div>
+
+  <!-- Haziq -->
+  <div class="avatar" id="av-b2" style="left:82%;top:65%">
+    <div class="av-act-ico" id="b2-act">📚</div>
+    <div class="av-sprite av-walk">
+      <div class="av-head" style="background:#FDBCB4;width:16px;height:14px">
+        <div class="av-eye l" style="width:3px;height:3px;top:4px;left:2px"></div>
+        <div class="av-eye r" style="width:3px;height:3px;top:4px;right:2px"></div>
+      </div>
+      <div class="av-body" style="background:#F39C12;width:20px;height:14px"></div>
+      <div class="av-legs">
+        <div class="av-leg" style="background:#1f3a5f;width:7px;height:9px"></div>
+        <div class="av-leg" style="background:#1f3a5f;width:7px;height:9px"></div>
+      </div>
+    </div>
+    <div class="av-name">HAZIQ 📖</div>
+    <div class="av-popup">
+      <div class="apc-name">Haziq Grind</div>
+      <div class="apc-row"><span>LVL</span><span id="b2-lvl">2</span></div>
+      <div class="apc-row"><span>XP</span><span id="b2-xp">180</span></div>
+      <div class="apc-row"><span>🔥</span><span id="b2-streak">3d</span></div>
+      <div class="apc-row"><span>📍</span><span id="b2-zone">Library</span></div>
+      <div class="apc-xpbar"><div class="apc-xpfill" id="b2-bar" style="width:35%"></div></div>
+    </div>
+  </div>
+
+  <!-- Farah -->
+  <div class="avatar" id="av-b3" style="left:6%;top:65%">
+    <div class="av-act-ico" id="b3-act">🏃</div>
+    <div class="av-sprite av-walk">
+      <div class="av-head" style="background:#C8A96E;width:16px;height:14px">
+        <div class="av-eye l" style="width:3px;height:3px;top:4px;left:2px"></div>
+        <div class="av-eye r" style="width:3px;height:3px;top:4px;right:2px"></div>
+      </div>
+      <div class="av-body" style="background:#00BCD4;width:20px;height:14px"></div>
+      <div class="av-legs">
+        <div class="av-leg" style="background:#263238;width:7px;height:9px"></div>
+        <div class="av-leg" style="background:#263238;width:7px;height:9px"></div>
+      </div>
+    </div>
+    <div class="av-name">FARAH ⚡</div>
+    <div class="av-popup">
+      <div class="apc-name">Farah Active</div>
+      <div class="apc-row"><span>LVL</span><span id="b3-lvl">3</span></div>
+      <div class="apc-row"><span>XP</span><span id="b3-xp">290</span></div>
+      <div class="apc-row"><span>🔥</span><span id="b3-streak">4d</span></div>
+      <div class="apc-row"><span>📍</span><span id="b3-zone">Track</span></div>
+      <div class="apc-xpbar"><div class="apc-xpfill" id="b3-bar" style="width:55%"></div></div>
+    </div>
+  </div>
+
+  <!-- ══════ WORLD HUD ══════ -->
+  <div id="world-hud">
+    <div class="whud-player">
+      <!-- mini sprite -->
+      <div class="whud-mini-sprite">
+        <div class="av-head" style="background:#FDBCB4;width:13px;height:11px">
+          <div class="av-eye l" style="width:2px;height:2px;top:3px;left:2px"></div>
+          <div class="av-eye r" style="width:2px;height:2px;top:3px;right:2px"></div>
+        </div>
+        <div class="av-body" style="background:#E74C3C;width:16px;height:12px"></div>
+        <div class="av-legs">
+          <div class="av-leg" style="background:#2C3E50;width:5px;height:8px"></div>
+          <div class="av-leg" style="background:#2C3E50;width:5px;height:8px"></div>
+        </div>
+      </div>
+      <div class="whud-info">
+        <div class="whud-name" id="hud-name">STUDENT</div>
+        <div class="whud-rank">Lv <span id="hud-lvl">1</span> — <span id="hud-rank-name">Wellness Cadet</span></div>
+        <div class="whud-xprow">
+          <div class="whud-xplbl">XP <span id="hud-xp-cur">0</span>/<span id="hud-xp-max">100</span></div>
+          <div class="whud-bar"><div class="whud-fill" id="hud-xpfill" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="whud-pills">
+      <div class="whud-pill">🪙 <span id="hud-coins">0</span></div>
+      <div class="whud-pill">🏆 #<span id="hud-rank-num">5</span></div>
+      <div class="whud-pill">📍 <span id="hud-zone">Campus</span></div>
+    </div>
+    <div class="whud-streak">
+      <div class="wstr-fire">🔥</div>
+      <div class="wstr-num"><span id="hud-streak">0</span>d</div>
+      <div class="wstr-lbl">streak</div>
+    </div>
+    <div class="whud-strike">
+      <div class="wstk-ico">⚡</div>
+      <div class="wstk-num"><span id="hud-strikes">0</span></div>
+      <div class="wstk-lbl">strikes</div>
+    </div>
+    <button class="px-btn green" onclick="switchTab('log')">+ LOG</button>
+  </div>
+
+</div><!-- /screen-world -->
+
+<!-- ════════════════ SCREEN: LOG ════════════════ -->
+<div id="screen-log" class="screen">
+  <div style="padding:12px;max-width:520px;margin:0 auto">
+
+    <!-- XP Earn Flash Banner -->
+    <div id="xp-flash" style="display:none;background:var(--gold);color:#000;font-family:'Press Start 2P',monospace;font-size:9px;padding:10px;text-align:center;margin-bottom:10px;animation:flashIn .3s ease">
+      +<span id="xp-flash-amt">0</span> XP  +<span id="coin-flash-amt">0</span> 🪙
+    </div>
+
+    <!-- Early Bird badge -->
+    <div id="earlybird-badge">🌅 EARLY BIRD BONUS ACTIVE — +20% XP before 8AM!</div>
+
+    <!-- Multiplier badge + title -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="section-title" style="margin:0">✅ LOG HABIT</div>
+      <div id="mult-badge" style="background:var(--navy-lt);border:2px solid var(--gold);padding:3px 8px;font-family:'Press Start 2P',monospace;font-size:6px;color:var(--gold)">
+        ×<span id="mult-val">1.0</span> XP
+      </div>
+    </div>
+
+    <!-- Daily XP Target Bar -->
+    <div id="daily-xp-bar-wrap">
+      <div class="dxp-row">
+        <span class="dxp-lbl">📊 Daily XP Target</span>
+        <span class="dxp-val"><span id="dxp-cur">0</span> / <span id="dxp-target">450</span> XP</span>
+      </div>
+      <div class="dxp-bar"><div class="dxp-fill" id="dxp-fill" style="width:0%"></div></div>
+    </div>
+
+    <!-- Streak bonus notice -->
+    <div id="streak-bonus-bar" style="background:var(--navy-lt);border:2px solid var(--orange);padding:6px 10px;font-size:17px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">
+      <span>🔥 Streak Bonus: <span id="streak-bonus-txt" style="color:var(--orange)">None</span></span>
+      <span style="color:var(--gray)">Streak: <span id="log-streak-num" style="color:var(--gold)">0</span>d</span>
+    </div>
+
+    <!-- CATEGORY TABS -->
+    <div style="display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap">
+      <button class="cat-tab active" onclick="selectCat('hydration')" id="ct-hydration">💧</button>
+      <button class="cat-tab" onclick="selectCat('exercise')"  id="ct-exercise">🏃</button>
+      <button class="cat-tab" onclick="selectCat('sleep')"     id="ct-sleep">😴</button>
+      <button class="cat-tab" onclick="selectCat('nutrition')" id="ct-nutrition">🥗</button>
+      <button class="cat-tab" onclick="selectCat('mindful')"   id="ct-mindful">🧘</button>
+      <button class="cat-tab" onclick="selectCat('study')"     id="ct-study">📚</button>
+      <button class="cat-tab" onclick="selectCat('calc')"      id="ct-calc" style="background:var(--purple);border-color:#6a1a8a">🧮</button>
+    </div>
+
+    <!-- ── HYDRATION ── -->
+    <div class="cat-panel active" id="cp-hydration">
+      <div class="log-card">
+        <div class="log-card-title">💧 Hydration</div>
+        <div class="log-card-sub">Track your daily water intake</div>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="logHydration(250)">+250ml</button>
+          <button class="quick-btn" onclick="logHydration(500)">+500ml</button>
+          <button class="quick-btn" onclick="logHydration(1000)">+1L</button>
+        </div>
+        <div class="water-meter-wrap">
+          <div style="font-size:16px;color:var(--gray);margin-bottom:4px">Daily goal: <span id="water-cur">0</span> / 2000ml</div>
+          <div class="water-meter-bar"><div id="water-meter-fill" style="width:0%;height:100%;background:linear-gradient(90deg,var(--xp-drk),var(--xp));transition:width .5s"></div></div>
+          <div id="water-goal-badge" style="display:none;color:var(--green);font-family:'Press Start 2P',monospace;font-size:7px;margin-top:6px">🎉 DAILY GOAL REACHED!</div>
+        </div>
+        <div style="margin-top:10px">
+          <div style="font-size:16px;color:var(--gray);margin-bottom:4px">Custom amount (ml):</div>
+          <div style="display:flex;gap:6px">
+            <input class="log-input" id="water-custom" type="number" placeholder="e.g. 350" min="50" max="2000">
+            <button class="px-btn blue" onclick="logHydrationCustom()">LOG</button>
+          </div>
+        </div>
+        <div class="xp-preview">💧 +20 XP · +4 🪙 per 500ml</div>
+      </div>
+    </div>
+
+    <!-- ── EXERCISE ── -->
+    <div class="cat-panel" id="cp-exercise">
+      <div class="log-card">
+        <div class="log-card-title">🏃 Exercise</div>
+        <div class="log-card-sub">Select activity and log your performance</div>
+
+        <!-- Activity selector -->
+        <div style="margin-bottom:10px">
+          <div style="font-size:16px;color:var(--gray);margin-bottom:4px">Activity:</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+            <button class="ex-btn active" onclick="selectEx(this,'pullup')"   id="ex-pullup">⬆️ Pull Up</button>
+            <button class="ex-btn" onclick="selectEx(this,'pushup')"   id="ex-pushup">💪 Push Up</button>
+            <button class="ex-btn" onclick="selectEx(this,'bench')"    id="ex-bench">🏋️ Bench Press</button>
+            <button class="ex-btn" onclick="selectEx(this,'squat')"    id="ex-squat">🦵 Squat</button>
+            <button class="ex-btn" onclick="selectEx(this,'running')"  id="ex-running">🏃 Running</button>
+            <button class="ex-btn" onclick="selectEx(this,'cycling')"  id="ex-cycling">🚴 Cycling</button>
+            <button class="ex-btn" onclick="selectEx(this,'plank')"    id="ex-plank">⏱️ Plank</button>
+            <button class="ex-btn" onclick="selectEx(this,'gym')"      id="ex-gym">🏟️ Gym Session</button>
+          </div>
+        </div>
+
+        <!-- Dynamic input area -->
+        <div id="ex-input-area" style="background:var(--navy-lt);border:2px solid var(--navy-rim);padding:10px;margin-bottom:10px">
+          <!-- reps/sets -->
+          <div id="ex-reps-wrap">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+              <div>
+                <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Sets</div>
+                <input class="log-input" id="ex-sets" type="number" placeholder="e.g. 3" min="1" max="20" value="3">
+              </div>
+              <div>
+                <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Reps</div>
+                <input class="log-input" id="ex-reps" type="number" placeholder="e.g. 10" min="1" max="200" value="10">
+              </div>
+            </div>
+          </div>
+          <!-- weight -->
+          <div id="ex-weight-wrap" style="display:none;margin-bottom:8px">
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Weight (kg)</div>
+            <input class="log-input" id="ex-weight" type="number" placeholder="e.g. 60" min="1" max="300">
+          </div>
+          <!-- distance -->
+          <div id="ex-dist-wrap" style="display:none;margin-bottom:8px">
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Distance (km)</div>
+            <input class="log-input" id="ex-dist" type="number" placeholder="e.g. 5.0" min="0.1" max="100" step="0.1">
+          </div>
+          <!-- duration -->
+          <div id="ex-dur-wrap" style="display:none;margin-bottom:8px">
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Duration (min)</div>
+            <input class="log-input" id="ex-dur" type="number" placeholder="e.g. 30" min="1" max="300">
+          </div>
+
+          <div id="ex-xp-preview" class="xp-preview" style="margin:0">🏃 Select activity to see XP</div>
+        </div>
+
+        <button class="px-btn green" style="width:100%;padding:10px" onclick="logExercise()">⚡ LOG EXERCISE</button>
+
+        <!-- Bot Companion -->
+        <button class="bot-companion-btn" onclick="logWithBot()">👥 LOG WITH BOT COMPANION (+55 XP bonus)</button>
+
+        <!-- Personal Best + Exercise History -->
+        <div id="ex-history-wrap" class="ex-history">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--gray)">📋 RECENT LOGS</div>
+            <div id="ex-pb-display" style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--gold)"></div>
+          </div>
+          <div id="ex-hist-list"><div style="color:var(--gray);font-size:15px">No records yet — start logging!</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SLEEP ── -->
+    <div class="cat-panel" id="cp-sleep">
+      <div class="log-card">
+        <div class="log-card-title">😴 Sleep & Recovery</div>
+        <div class="log-card-sub">Log last night's sleep</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:16px;color:var(--gray);margin-bottom:4px">Hours slept</div>
+            <input class="log-input" id="sleep-hours" type="number" placeholder="e.g. 7.5" min="1" max="14" step="0.5">
+          </div>
+          <div>
+            <div style="font-size:16px;color:var(--gray);margin-bottom:4px">Quality (1–5 ⭐)</div>
+            <div style="display:flex;gap:4px;margin-top:4px">
+              <button class="star-btn" onclick="setSleepQuality(1)">☆</button>
+              <button class="star-btn" onclick="setSleepQuality(2)">☆</button>
+              <button class="star-btn" onclick="setSleepQuality(3)">☆</button>
+              <button class="star-btn" onclick="setSleepQuality(4)">☆</button>
+              <button class="star-btn" onclick="setSleepQuality(5)">☆</button>
+            </div>
+            <div style="font-size:14px;color:var(--gold);margin-top:3px">Rated: <span id="sleep-q-val">—</span>⭐</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:8px">
+          <button class="quick-btn" onclick="setSleepPreset(6)">6h</button>
+          <button class="quick-btn" onclick="setSleepPreset(7)">7h</button>
+          <button class="quick-btn" onclick="setSleepPreset(8)">8h</button>
+          <button class="quick-btn" onclick="setSleepPreset(9)">9h</button>
+        </div>
+        <button class="px-btn green" style="width:100%;padding:10px" onclick="logSleep()">😴 LOG SLEEP</button>
+        <div class="xp-preview">😴 6–7h = +50 XP · 7–9h = +80 XP · Quality bonus +20 XP</div>
+      </div>
+    </div>
+
+    <!-- ── NUTRITION ── -->
+    <div class="cat-panel" id="cp-nutrition">
+      <div class="log-card">
+        <div class="log-card-title">🥗 Nutrition</div>
+        <div class="log-card-sub">Log your meals and healthy choices</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <button class="meal-btn" onclick="logMeal('balanced')">🍱 Balanced Meal<div style="font-size:12px;color:var(--xp)">+35 XP</div></button>
+          <button class="meal-btn" onclick="logMeal('snack')">🍎 Healthy Snack<div style="font-size:12px;color:var(--xp)">+30 XP</div></button>
+          <button class="meal-btn" onclick="logMeal('protein')">🥩 High Protein<div style="font-size:12px;color:var(--xp)">+35 XP</div></button>
+          <button class="meal-btn" onclick="logMeal('veggie')">🥦 Veggie Plate<div style="font-size:12px;color:var(--xp)">+40 XP</div></button>
+        </div>
+        <div style="background:var(--navy-lt);border:2px solid var(--navy-rim);padding:8px">
+          <div style="font-size:16px;color:var(--gray);margin-bottom:4px">Today's meals:</div>
+          <div id="meal-log" style="font-size:18px;min-height:28px;color:var(--white)">None yet</div>
+        </div>
+        <div id="triple-meal-badge" style="display:none;color:var(--green);font-family:'Press Start 2P',monospace;font-size:6px;margin-top:6px;padding:4px;background:var(--navy-lt);border:2px solid var(--green)">🎉 3 BALANCED MEALS BONUS! +120 XP</div>
+        <div class="xp-preview">🥗 Log 3+ balanced meals for +120 XP bonus!</div>
+      </div>
+    </div>
+
+    <!-- ── MINDFULNESS ── -->
+    <div class="cat-panel" id="cp-mindful">
+      <div class="log-card">
+        <div class="log-card-title">🧘 Mindfulness</div>
+        <div class="log-card-sub">Meditation, journaling, and active breaks</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <button class="meal-btn" onclick="logMindful('meditation',5)">🧘 Meditate 5min<div style="font-size:12px;color:var(--xp)">+30 XP</div></button>
+          <button class="meal-btn" onclick="logMindful('meditation',10)">🧘 Meditate 10min<div style="font-size:12px;color:var(--xp)">+40 XP</div></button>
+          <button class="meal-btn" onclick="logMindful('journal',0)">📔 Journal Entry<div style="font-size:12px;color:var(--xp)">+35 XP</div></button>
+          <button class="meal-btn" onclick="logMindful('break',0)">⏱️ Pomodoro Break<div style="font-size:12px;color:var(--xp)">+25 XP</div></button>
+        </div>
+        <!-- Journal prompt -->
+        <div id="journal-area" style="display:none;margin-top:8px">
+          <div style="font-size:16px;color:var(--gold);margin-bottom:6px">📔 Today's Prompt:</div>
+          <div id="journal-prompt" style="font-size:18px;color:var(--white);background:var(--navy-lt);border:2px solid var(--navy-rim);padding:8px;margin-bottom:8px"></div>
+          <textarea id="journal-text" style="width:100%;background:var(--navy-lt);border:3px solid var(--navy-rim);color:var(--white);font-family:'VT323',monospace;font-size:18px;padding:6px;resize:vertical;height:90px" placeholder="Write your thoughts..."></textarea>
+          <button class="px-btn" style="margin-top:6px;width:100%" onclick="submitJournal()">📔 SUBMIT ENTRY</button>
+        </div>
+        <div class="xp-preview">🧘 Mindfulness reduces exam stress and boosts focus!</div>
+      </div>
+    </div>
+
+    <!-- ── STUDY BREAK ── -->
+    <div class="cat-panel" id="cp-study">
+      <div class="log-card">
+        <div class="log-card-title">📚 Study Break</div>
+        <div class="log-card-sub">Log Pomodoro sessions and active breaks</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px">
+          <button class="meal-btn" onclick="logStudy(25)">⏱️ 25min Study<div style="font-size:12px;color:var(--xp)">+25 XP</div></button>
+          <button class="meal-btn" onclick="logStudy(50)">⏱️ 50min Study<div style="font-size:12px;color:var(--xp)">+40 XP</div></button>
+          <button class="meal-btn" onclick="logStudy('stretch')">🤸 Stretch Break<div style="font-size:12px;color:var(--xp)">+20 XP</div></button>
+          <button class="meal-btn" onclick="logStudy('outdoor')">🌿 Outdoor Walk<div style="font-size:12px;color:var(--xp)">+45 XP</div></button>
+        </div>
+        <div style="font-size:16px;color:var(--gray)">Sessions today: <span id="study-sessions" style="color:var(--gold)">0</span></div>
+        <div class="xp-preview">📚 Active breaks improve study retention by 25%!</div>
+      </div>
+    </div>
+
+    <!-- ── CALCULATOR ── -->
+    <div class="cat-panel" id="cp-calc">
+      <div class="log-card">
+        <div class="log-card-title">🧮 Smart Calculator</div>
+        <div class="log-card-sub">Get personalized targets & scaled XP</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+          <div>
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Age</div>
+            <input class="log-input" id="calc-age" type="number" placeholder="e.g. 20" min="10" max="80">
+          </div>
+          <div>
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Gender</div>
+            <select class="log-input" id="calc-gender">
+              <option value="m">Male</option>
+              <option value="f">Female</option>
+            </select>
+          </div>
+          <div>
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Weight (kg)</div>
+            <input class="log-input" id="calc-weight" type="number" placeholder="e.g. 65" min="30" max="200">
+          </div>
+          <div>
+            <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Height (cm)</div>
+            <input class="log-input" id="calc-height" type="number" placeholder="e.g. 170" min="100" max="250">
+          </div>
+        </div>
+
+        <button class="px-btn" style="width:100%;margin-bottom:10px" onclick="runCalc()">🧮 CALCULATE</button>
+
+        <div id="calc-result" style="display:none">
+          <div style="background:var(--navy-lt);border:3px solid var(--gold);padding:12px">
+            <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold);margin-bottom:10px">📊 YOUR PROFILE</div>
+            <div class="calc-row"><span>BMI</span><span id="cr-bmi">—</span></div>
+            <div class="calc-row"><span>Status</span><span id="cr-status">—</span></div>
+            <div class="calc-row"><span>Fitness Level</span><span id="cr-level" style="color:var(--green)">—</span></div>
+            <div class="calc-row"><span>XP Multiplier</span><span id="cr-mult" style="color:var(--gold)">—</span></div>
+            <div class="calc-row"><span>Est. VO2 Max</span><span id="cr-vo2">—</span></div>
+            <div class="calc-row"><span>Daily Calories</span><span id="cr-calories" style="color:var(--orange)">—</span></div>
+            <div class="calc-row"><span>Protein Target</span><span id="cr-protein" style="color:var(--xp)">—</span></div>
+            <div style="margin-top:10px;border-top:2px solid var(--navy-rim);padding-top:10px">
+              <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--xp);margin-bottom:6px">🎯 DAILY TARGETS</div>
+              <div id="cr-targets" style="font-size:17px;line-height:1.7"></div>
+            </div>
+            <div style="margin-top:10px;border-top:2px solid var(--navy-rim);padding-top:10px">
+              <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--purple);margin-bottom:6px">💪 RECOMMENDED EXERCISES</div>
+              <div id="cr-exercises" style="font-size:17px;line-height:1.7"></div>
+            </div>
+            <button class="px-btn green" style="width:100%;margin-top:12px;padding:10px" onclick="applyProfile()">✅ APPLY TO MY PROFILE</button>
+            <div id="calc-applied-badge">✅ Profile applied! XP multiplier updated.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DAILY QUESTS ── -->
+    <div style="margin-top:14px">
+      <div class="section-title">🗺️ DAILY QUESTS</div>
+      <div id="quest-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      <!-- Weekly quest -->
+      <div style="margin-top:10px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--purple);margin-bottom:6px">📅 WEEKLY CHALLENGE</div>
+        <div id="weekly-quest" class="quest-card" style="border-color:var(--purple)"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════ SCREEN: SOCIAL ════════════════ -->
+<div id="screen-social" class="screen">
+  <div style="padding:12px;max-width:520px;margin:0 auto">
+
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:4px;margin-bottom:12px">
+      <button class="soc-tab active" id="st-lb"     onclick="socTab('lb')">🏆 RANKS</button>
+      <button class="soc-tab"        id="st-exlb"   onclick="socTab('exlb')">💪 EXERCISE</button>
+      <button class="soc-tab"        id="st-badges" onclick="socTab('badges')">🎖️ BADGES</button>
+      <button class="soc-tab"        id="st-stories"onclick="socTab('stories')">👥 STORIES</button>
+    </div>
+
+    <!-- ── OVERALL LEADERBOARD ── -->
+    <div class="soc-panel active" id="sp-lb">
+      <div class="section-title">🏆 OVERALL LEADERBOARD</div>
+      <div id="lb-live-badge" style="font-size:14px;color:var(--green);margin-bottom:8px;font-family:'Press Start 2P',monospace;font-size:6px">● LIVE — updates every 9s</div>
+      <div id="lb-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- ── EXERCISE LEADERBOARDS ── -->
+    <div class="soc-panel" id="sp-exlb">
+      <div class="section-title">💪 EXERCISE RANKINGS</div>
+      <div style="display:flex;gap:4px;margin-bottom:10px;flex-wrap:wrap" id="ex-lb-tabs">
+        <button class="exlb-tab active" onclick="selectExLb(this,'pullup')">⬆️ Pull Up</button>
+        <button class="exlb-tab" onclick="selectExLb(this,'pushup')">💪 Push Up</button>
+        <button class="exlb-tab" onclick="selectExLb(this,'bench')">🏋️ Bench</button>
+        <button class="exlb-tab" onclick="selectExLb(this,'squat')">🦵 Squat</button>
+        <button class="exlb-tab" onclick="selectExLb(this,'running')">🏃 Run</button>
+        <button class="exlb-tab" onclick="selectExLb(this,'plank')">⏱️ Plank</button>
+      </div>
+      <div id="exlb-title" style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--xp);margin-bottom:8px">⬆️ PULL UP — Most Reps</div>
+      <div id="exlb-list" style="display:flex;flex-direction:column;gap:6px"></div>
+    </div>
+
+    <!-- ── BADGES ── -->
+    <div class="soc-panel" id="sp-badges">
+      <div class="section-title">🎖️ ACHIEVEMENTS</div>
+      <div style="font-size:17px;color:var(--gray);margin-bottom:10px">Earned: <span id="badge-count" style="color:var(--gold)">0</span> / 12</div>
+      <div id="badge-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+    </div>
+
+    <!-- ── STUDENT STORIES ── -->
+    <div class="soc-panel" id="sp-stories">
+      <div class="section-title">👥 STUDENT STORIES</div>
+      <div style="font-size:16px;color:var(--gray);margin-bottom:10px">Real experiences from HIT students</div>
+
+      <!-- Add Story Form -->
+      <div style="background:var(--navy-mid);border:3px solid var(--gold);padding:12px;margin-bottom:12px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold);margin-bottom:8px">✍️ SHARE YOUR STORY</div>
+        <div style="margin-bottom:6px">
+          <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Your name</div>
+          <input id="story-name" class="log-input" placeholder="e.g. Ahmad, Year 2 CS" maxlength="40">
+        </div>
+        <div style="margin-bottom:8px">
+          <div style="font-size:15px;color:var(--gray);margin-bottom:3px">Your experience</div>
+          <textarea id="story-text" class="log-input" style="height:70px;resize:vertical" placeholder="How did VitalQuest help your wellness journey?..." maxlength="200"></textarea>
+        </div>
+        <button class="px-btn green" style="width:100%;padding:8px" onclick="submitStory()">📤 SHARE STORY</button>
+      </div>
+
+      <div id="stories-list" style="display:flex;flex-direction:column;gap:10px"></div>
+      <!-- Analytics summary -->
+      <div style="margin-top:14px">
+        <div class="section-title" style="font-size:7px">📊 MY ANALYTICS</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px" id="analytics-grid"></div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--xp);margin-bottom:6px">📈 WEEKLY XP TREND</div>
+        <div id="css-chart" style="display:flex;align-items:flex-end;gap:4px;height:80px;background:var(--navy-lt);border:3px solid var(--navy-rim);padding:8px 6px"></div>
+        <div id="css-chart-labels" style="display:flex;gap:4px;margin-top:3px"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════ SCREEN: REWARDS ════════════════ -->
+<div id="screen-rewards" class="screen">
+  <div style="padding:12px;max-width:520px;margin:0 auto">
+
+    <!-- Coin balance -->
+    <div style="background:var(--navy-mid);border:4px solid var(--gold);padding:12px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gray)">YOUR BALANCE</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:20px;color:var(--gold);margin-top:4px">🪙 <span id="shop-coins">0</span></div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:15px;color:var(--gray)">Level</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:14px;color:var(--xp)" id="shop-level">1</div>
+      </div>
+    </div>
+
+    <!-- Buy Coins section -->
+    <div class="section-title">💰 BUY WELLCOINS</div>
+    <div id="buy-coins-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+
+      <div style="background:var(--navy-mid);border:3px solid var(--gold);padding:10px;text-align:center;cursor:pointer;transition:all .15s" onclick="buyCoins(100,'Starter Pack','RM 1.00')">
+        <div style="font-size:28px;margin-bottom:4px">🪙</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--gold)">100</div>
+        <div style="font-size:14px;color:var(--gray);margin:4px 0">Starter</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--white)">RM 1.00</div>
+        <div style="font-size:12px;color:var(--gray);margin-top:3px">Best for try</div>
+      </div>
+
+      <div style="background:var(--navy-mid);border:4px solid var(--green);padding:10px;text-align:center;cursor:pointer;transition:all .15s;position:relative" onclick="buyCoins(500,'Popular Pack','RM 4.00')">
+        <div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--green);color:#000;font-family:'Press Start 2P',monospace;font-size:5px;padding:2px 6px;white-space:nowrap">🔥 POPULAR</div>
+        <div style="font-size:28px;margin-bottom:4px">🪙🪙</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--green)">500</div>
+        <div style="font-size:14px;color:var(--gray);margin:4px 0">Popular</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--white)">RM 4.00</div>
+        <div style="font-size:12px;color:var(--green);margin-top:3px">Save 20%!</div>
+      </div>
+
+      <div style="background:var(--navy-mid);border:3px solid var(--purple);padding:10px;text-align:center;cursor:pointer;transition:all .15s" onclick="buyCoins(1000,'Pro Pack','RM 7.00')">
+        <div style="font-size:28px;margin-bottom:4px">💎</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--purple)">1000</div>
+        <div style="font-size:14px;color:var(--gray);margin:4px 0">Pro Pack</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--white)">RM 7.00</div>
+        <div style="font-size:12px;color:var(--purple);margin-top:3px">Save 30%!</div>
+      </div>
+
+    </div>
+
+    <!-- Rewarded ad -->
+    <div style="background:var(--navy-lt);border:3px solid var(--purple);padding:10px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--purple)">📺 SPONSORED</div>
+        <div style="font-size:17px;color:var(--white);margin-top:3px">Watch a short ad → earn free coins!</div>
+      </div>
+      <button class="px-btn" style="background:var(--purple);border-color:#6a1a8a;color:#fff;font-size:6px" onclick="watchAd()">▶ +50 🪙</button>
+    </div>
+
+    <!-- Section: Souvenirs (Real-Life Rewards) -->
+    <div class="section-title" style="color:var(--orange)">🎁 REAL-LIFE SOUVENIRS</div>
+    <div style="font-size:15px;color:var(--gray);margin-bottom:10px">Physical wellness merch — delivered to HIT Student Centre</div>
+    <div id="shop-souvenirs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+
+    <!-- Section: Coupons -->
+    <div class="section-title">🎟️ CAMPUS VOUCHERS</div>
+    <div id="shop-coupons" style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px"></div>
+
+    <!-- Section: Cosmetics -->
+    <div class="section-title">👕 AVATAR COSMETICS</div>
+    <div id="shop-cosmetics" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px"></div>
+
+    <!-- Section: Boosts -->
+    <div class="section-title">⚡ BOOSTS</div>
+    <div id="shop-boosts" style="display:flex;flex-direction:column;gap:8px"></div>
+
+    <!-- Redeemed overlay -->
+    <div id="redeemed-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:700;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+      <div style="background:var(--navy-mid);border:6px solid var(--green);box-shadow:0 0 40px rgba(57,255,20,.5),8px 8px 0 #000;padding:36px 48px;text-align:center;animation:luPop .4s ease both">
+        <div style="font-size:56px;margin-bottom:8px" id="redeem-ico">🎉</div>
+        <div style="font-family:'Press Start 2P',monospace;font-size:14px;color:var(--green);text-shadow:0 0 16px var(--green)">REDEEMED!</div>
+        <div style="font-size:22px;color:var(--white);margin:10px 0" id="redeem-item">Item</div>
+        <div style="font-size:17px;color:var(--gray)" id="redeem-desc">Show this screen at the counter</div>
+        <button class="px-btn green" style="margin-top:16px" onclick="_('redeemed-overlay').style.display='none'">✓ DONE</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════ SCREEN: ME ════════════════ -->
+<div id="screen-me" class="screen">
+  <div style="padding:14px">
+
+    <!-- Hero Card -->
+    <div class="hero-card px-border" style="max-width:500px;margin:0 auto">
+      <div class="section-title" style="text-align:center">⚔️ YOUR HERO</div>
+      <div class="hero-top">
+        <!-- Big sprite -->
+        <div class="hero-sprite-wrap">
+          <div class="hero-lvl-crown">LV <span id="me-lvl-crown">1</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div class="av-head" style="background:#FDBCB4;width:26px;height:22px;position:relative">
+              <div class="av-eye l" style="width:4px;height:4px;top:6px;left:4px"></div>
+              <div class="av-eye r" style="width:4px;height:4px;top:6px;right:4px"></div>
+            </div>
+            <div class="av-body" style="background:#E74C3C;width:34px;height:22px"></div>
+            <div class="av-legs">
+              <div class="av-leg" style="background:#2C3E50;width:12px;height:16px"></div>
+              <div class="av-leg" style="background:#2C3E50;width:12px;height:16px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="hero-info">
+          <div class="hi-row"><span class="hi-lbl">NAME</span><span class="hi-val gold" id="me-name">Student</span></div>
+          <div class="hi-row"><span class="hi-lbl">LEVEL</span><span class="hi-val blue" id="me-level">1</span></div>
+          <div class="hi-row"><span class="hi-lbl">RANK</span><span class="hi-val" id="me-rank">Wellness Cadet</span></div>
+          <div class="hi-row"><span class="hi-lbl">TOTAL XP</span><span class="hi-val" id="me-xp">0</span></div>
+          <div class="hi-row"><span class="hi-lbl">🪙 COINS</span><span class="hi-val gold" id="me-coins">0</span></div>
+          <div class="hi-row"><span class="hi-lbl">🔥 STREAK</span><span class="hi-val" id="me-streak">0 days</span></div>
+          <div class="hi-row"><span class="hi-lbl">⚡ STRIKES</span><span class="hi-val green" id="me-strikes">0</span></div>
+          <div class="hi-row"><span class="hi-lbl">🏆 RANK</span><span class="hi-val" id="me-ranknum">#5</span></div>
+          <div class="xp-bar-full"><div class="xp-bar-fill" id="me-xpbar" style="width:0%"></div></div>
+          <div class="xp-bar-lbl"><span id="me-xpcur">0</span> / <span id="me-xpnxt">100</span> XP to Level Up</div>
+        </div>
+      </div>
+      <!-- Profile summary (shown after calculator) -->
+      <div id="me-profile-card" style="display:none;margin-top:12px;background:var(--navy-lt);border:3px solid var(--xp);padding:10px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--xp);margin-bottom:8px">🧮 FITNESS PROFILE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:17px">
+          <div>BMI: <span id="me-bmi" style="color:var(--gold)">—</span></div>
+          <div>Status: <span id="me-bmi-status" style="color:var(--white)">—</span></div>
+          <div>Level: <span id="me-fitness-lvl" style="color:var(--green)">—</span></div>
+          <div>XP Mult: <span id="me-xp-mult" style="color:var(--gold)">—</span></div>
+          <div>Calories: <span id="me-calories" style="color:var(--orange)">—</span></div>
+          <div>Protein: <span id="me-protein" style="color:var(--xp)">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Name Setup -->
+    <div class="name-setup px-border" style="max-width:500px;margin:12px auto 0">
+      <h3>⚙️ SET YOUR NAME</h3>
+      <div class="name-row">
+        <input id="name-input" type="text" placeholder="Enter your name..." maxlength="16">
+        <button class="px-btn" onclick="setName()">SET</button>
+      </div>
+    </div>
+
+    <!-- Streak Forgiveness Card -->
+    <div id="streak-save-card" style="display:none;max-width:500px;margin:10px auto 0;background:var(--navy-mid);border:3px solid var(--orange);padding:14px">
+      <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--orange);margin-bottom:6px">💔 STREAK AT RISK!</div>
+      <div style="font-size:17px;color:var(--white);margin-bottom:8px">You missed a day. Save your streak for 50 🪙?</div>
+      <div style="display:flex;gap:8px">
+        <button class="streak-save-btn" onclick="forgivStreak()" style="flex:1">🔥 SAVE STREAK (50 🪙)</button>
+        <button class="px-btn red" onclick="dismissStreakSave()" style="flex:1;font-size:6px">✕ Reset</button>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="stats-grid">
+      <div class="sg-card px-border">
+        <div class="sg-ico">✅</div>
+        <div class="sg-val" id="me-habits">0</div>
+        <div class="sg-lbl">Habits Today</div>
+      </div>
+      <div class="sg-card px-border">
+        <div class="sg-ico">🗺️</div>
+        <div class="sg-val" id="me-quests">0</div>
+        <div class="sg-lbl">Quests Done</div>
+      </div>
+      <div class="sg-card px-border">
+        <div class="sg-ico">🎖️</div>
+        <div class="sg-val" id="me-badges">0</div>
+        <div class="sg-lbl">Badges Earned</div>
+      </div>
+      <div class="sg-card px-border">
+        <div class="sg-ico">🌿</div>
+        <div class="sg-val" id="me-vitality">0%</div>
+        <div class="sg-lbl">Campus Vitality</div>
+      </div>
+    </div>
+
+    <!-- Demo mode in Me screen -->
+    <div style="max-width:500px;margin:14px auto 0">
+      <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:var(--purple);margin-bottom:8px">🎬 JUDGE DEMO TOOLS</div>
+      <button class="px-btn red" onclick="runDemo()" style="width:100%;padding:12px;margin-bottom:8px;background:var(--purple);border-color:#6a1a8a">
+        🎬 DEMO MODE — Simulate 7 Days
+      </button>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+        <button class="px-btn blue" onclick="quickBoost()" style="padding:8px;font-size:6px">⚡ QUICK BOOST<br><span style="font-size:5px">+300 XP +100🪙</span></button>
+        <button class="px-btn" onclick="resetGame()" style="padding:8px;font-size:6px;background:var(--red);border-color:#AA0011">🗑️ RESET ALL<br><span style="font-size:5px">Fresh start</span></button>
+      </div>
+      <div style="font-size:15px;color:var(--gray);text-align:center">Demo tools for judges & presentation</div>
+    </div>
+
+    <!-- Impact summary (shown after demo) -->
+    <div id="impact-card" style="display:none;max-width:500px;margin:14px auto 0;background:var(--navy-mid);border:4px solid var(--green);padding:16px">
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--green);margin-bottom:10px;text-align:center">📊 7-DAY IMPACT REPORT</div>
+      <div id="impact-body" style="font-size:18px;line-height:1.8;color:var(--white)"></div>
+      <div style="margin-top:10px;padding:8px;background:var(--navy-lt);border-left:4px solid var(--xp);font-size:16px;color:var(--xp)">
+        📚 Research shows gamification increases healthy habit adherence by 15–30%. VitalQuest makes it visible, fun, and rewarding.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Onboarding Overlay -->
+<div id="onboard-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:700;align-items:center;justify-content:center;flex-direction:column;gap:0;overflow-y:auto">
+  <div id="onboard-box" style="background:var(--navy-mid);border:6px solid var(--gold);box-shadow:0 0 40px rgba(255,215,0,.4),8px 8px 0 #000;padding:28px 32px;max-width:360px;width:90%;animation:luPop .4s ease both;margin:auto">
+    <div id="onboard-step-1" class="onboard-step">
+      <div style="font-size:48px;text-align:center;margin-bottom:10px">⚔️</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:var(--gold);text-align:center;margin-bottom:8px">WELCOME!</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--xp);text-align:center;margin-bottom:14px">VitalQuest HIT</div>
+      <div style="font-size:18px;color:var(--white);line-height:1.6;margin-bottom:16px">Turn your daily healthy habits into an RPG adventure. Earn XP, level up, and transform the campus!</div>
+      <button class="px-btn green" style="width:100%;padding:10px" onclick="onboardNext(2)">▶ NEXT</button>
+    </div>
+    <div id="onboard-step-2" class="onboard-step" style="display:none">
+      <div style="font-size:40px;text-align:center;margin-bottom:10px">🌍</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);margin-bottom:10px">THE CAMPUS WORLD</div>
+      <div style="font-size:17px;color:var(--white);line-height:1.6;margin-bottom:10px">Your pixel avatar lives on a live campus map. Bots roam around doing their habits too!</div>
+      <div style="background:var(--navy-lt);border:2px solid var(--navy-rim);padding:8px;font-size:16px;color:var(--xp);margin-bottom:14px">
+        💡 <b>Tip:</b> Click any zone (Gym, Track, Café...) to jump straight to logging that habit!
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="px-btn" onclick="onboardNext(1)" style="flex:1;font-size:6px">◀ BACK</button>
+        <button class="px-btn green" onclick="onboardNext(3)" style="flex:2;padding:10px">▶ NEXT</button>
+      </div>
+    </div>
+    <div id="onboard-step-3" class="onboard-step" style="display:none">
+      <div style="font-size:40px;text-align:center;margin-bottom:10px">⭐</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);margin-bottom:10px">HOW TO EARN XP</div>
+      <div style="font-size:16px;color:var(--white);line-height:1.7;margin-bottom:10px">
+        ✅ Log any habit → XP + 🪙 coins<br>
+        🔥 Keep a streak → up to +60% XP<br>
+        ⚡ Strike Points → open app daily<br>
+        🗺️ Complete quests → big XP bursts<br>
+        🎖️ Unlock badges → +100 XP each
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="px-btn" onclick="onboardNext(2)" style="flex:1;font-size:6px">◀ BACK</button>
+        <button class="px-btn green" onclick="onboardNext(4)" style="flex:2;padding:10px">▶ NEXT</button>
+      </div>
+    </div>
+    <div id="onboard-step-4" class="onboard-step" style="display:none">
+      <div style="font-size:40px;text-align:center;margin-bottom:10px">🪙</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);margin-bottom:10px">REAL REWARDS</div>
+      <div style="font-size:17px;color:var(--white);line-height:1.6;margin-bottom:10px">Spend WellCoins on real campus perks:</div>
+      <div style="font-size:16px;line-height:1.8;margin-bottom:14px">
+        🍱 500 🪙 → Café 10% off<br>
+        💪 1000 🪙 → Gym Day Pass<br>
+        🧃 1500 🪙 → Health Drink<br>
+        👕 200 🪙 → Avatar Cosmetics
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="px-btn" onclick="onboardNext(3)" style="flex:1;font-size:6px">◀ BACK</button>
+        <button class="px-btn green" onclick="closeOnboard()" style="flex:2;padding:10px">🚀 LET'S GO!</button>
+      </div>
+    </div>
+    <!-- Step dots -->
+    <div style="display:flex;justify-content:center;gap:6px;margin-top:14px" id="onboard-dots">
+      <div class="ob-dot active" id="od-1"></div>
+      <div class="ob-dot" id="od-2"></div>
+      <div class="ob-dot" id="od-3"></div>
+      <div class="ob-dot" id="od-4"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Confirmation Modal -->
+<div id="reset-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:750;align-items:center;justify-content:center">
+  <div style="background:var(--navy-mid);border:6px solid var(--red);box-shadow:8px 8px 0 #000;padding:28px 36px;text-align:center;max-width:320px;width:90%;animation:luPop .3s ease both">
+    <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--red);margin-bottom:10px">RESET ALL?</div>
+    <div style="font-size:17px;color:var(--white);margin-bottom:18px;line-height:1.5">All XP, coins, badges, and progress will be permanently deleted. This cannot be undone.</div>
+    <div style="display:flex;gap:8px">
+      <button class="px-btn" style="flex:1;background:var(--gray);border-color:#444;color:#fff;font-size:6px" onclick="_('reset-modal').style.display='none'">✕ CANCEL</button>
+      <button class="px-btn red" style="flex:1;font-size:6px" onclick="doReset()">🗑️ CONFIRM</button>
+    </div>
+  </div>
+</div>
+
+<!-- Badge Unlock Overlay -->
+<div id="badge-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:550;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="background:var(--navy-mid);border:6px solid var(--gold);box-shadow:0 0 40px rgba(255,215,0,.5),8px 8px 0 #000;padding:32px 44px;text-align:center;animation:luPop .4s ease both">
+    <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--gold);margin-bottom:8px">🎖️ BADGE UNLOCKED!</div>
+    <div style="font-size:56px;margin:8px 0" id="bu-icon">🏅</div>
+    <div style="font-family:'Press Start 2P',monospace;font-size:10px;color:var(--white);margin-bottom:6px" id="bu-name">Badge</div>
+    <div style="font-size:18px;color:var(--gray);margin-bottom:14px" id="bu-desc">Description</div>
+    <div style="font-size:18px;color:var(--gold)">+100 XP · +30 🪙</div>
+    <button class="px-btn" style="margin-top:14px" onclick="_('badge-overlay').style.display='none'">✨ AWESOME!</button>
+  </div>
+</div>
+
+<!-- ════════════════ OVERLAYS ════════════════ -->
+<!-- Level Up -->
+<div id="lvlup">
+  <div id="ptcls"></div>
+  <div class="lu-box">
+    <div class="lu-title">⭐ LEVEL UP! ⭐</div>
+    <div class="lu-num" id="lu-num">2</div>
+    <div class="lu-rank" id="lu-rank">Wellness Rookie</div>
+    <div class="lu-sub">You're growing stronger!</div>
+    <button class="px-btn" onclick="closeLvlUp()">▶ CONTINUE</button>
+  </div>
+</div>
+
+<!-- Demo Mode Floating Button -->
+<button id="demo-btn" onclick="runDemo()">🎬 DEMO</button>
+
+<!-- Combo Flash -->
+<div id="combo-flash">🔥 COMBO!</div>
+
+<!-- Toast Container -->
+<div id="toasts"></div>
+
+<!-- ════════════════ BOTTOM NAV ════════════════ -->
+<nav id="bottom-nav">
+  <button class="bnav active" id="bnav-world"   onclick="switchTab('world')">  <span class="bico">🌍</span>WORLD</button>
+  <button class="bnav"        id="bnav-log"     onclick="switchTab('log')">    <span class="bico">✅</span>LOG</button>
+  <button class="bnav"        id="bnav-social"  onclick="switchTab('social')"> <span class="bico">🏆</span>SOCIAL</button>
+  <button class="bnav"        id="bnav-rewards" onclick="switchTab('rewards')"><span class="bico">🛒</span>REWARDS</button>
+  <button class="bnav"        id="bnav-me"      onclick="switchTab('me')">     <span class="bico">🧙</span>ME</button>
+</nav>
+
+<!-- ════════════════════════════════════════════
+     JAVASCRIPT — GAME ENGINE
+════════════════════════════════════════════ -->
+<script>
+/* ══════════════════════════════════════════
+   CONSTANTS
+══════════════════════════════════════════ */
+const LEVELS = [
+  {lvl:1, xp:0,    rank:"Wellness Cadet"},
+  {lvl:2, xp:100,  rank:"Wellness Rookie"},
+  {lvl:3, xp:300,  rank:"Health Explorer"},
+  {lvl:4, xp:600,  rank:"Vitality Scout"},
+  {lvl:5, xp:1000, rank:"Wellness Knight"},
+  {lvl:6, xp:1500, rank:"Health Champion"},
+  {lvl:7, xp:2100, rank:"Vitality Hero"},
+  {lvl:8, xp:2800, rank:"Wellness Legend"},
+  {lvl:9, xp:3600, rank:"Campus Guardian"},
+  {lvl:10,xp:4500, rank:"VitalQuest Master"},
+];
+
+const ZONES = {
+  gym:  {name:"Gym",          icon:"🏋️", lft:"3%",   top:"55%"},
+  track:{name:"Running Track",icon:"🏃", lft:"24%",  top:"60%"},
+  dorm: {name:"Dorm",         icon:"😴", lft:"50%",  top:"53%"},
+  zen:  {name:"Zen Garden",   icon:"🧘", lft:"66%",  top:"60%"},
+  cafe: {name:"Cafeteria",    icon:"🍱", lft:"86%",  top:"55%"},
+  water:{name:"Water Station",icon:"💧", lft:"8%",   top:"68%"},
+  lib:  {name:"Library",      icon:"📚", lft:"80%",  top:"68%"},
+};
+
+/* ══════════════════════════════════════════
+   GAME STATE
+══════════════════════════════════════════ */
+const load = (k,d) => { try{return JSON.parse(localStorage.getItem(k))??d}catch{return d} };
+
+let G = {
+  p: {
+    name:    localStorage.getItem('vq_name') || 'Student',
+    xp:      load('vq_xp', 0),
+    coins:   load('vq_coins', 0),
+    streak:  load('vq_streak', 0),
+    strikes: load('vq_strikes', 0),
+    level:   load('vq_level', 1),
+    zone:    'campus',
+    habitsToday: 0,
+    questsDone:  0,
+    badgesEarned:0,
+  },
+  bots:[
+    {name:"Amir HIT",      xp:320, lvl:3, streak:5, zone:'gym',   icon:'🏋️'},
+    {name:"Siti Wellness", xp:410, lvl:4, streak:7, zone:'cafe',  icon:'🥗'},
+    {name:"Haziq Grind",   xp:180, lvl:2, streak:3, zone:'lib',   icon:'📚'},
+    {name:"Farah Active",  xp:290, lvl:3, streak:4, zone:'track', icon:'🏃'},
+  ],
+};
+
+/* ══════════════════════════════════════════
+   LEVEL HELPERS
+══════════════════════════════════════════ */
+function lvlData(lvl){ return LEVELS.find(l=>l.lvl===lvl)||LEVELS[LEVELS.length-1] }
+function nextXP(lvl) { const n=LEVELS.find(l=>l.lvl===lvl+1); return n?n.xp:99999 }
+function xpPct(xp,lvl){
+  const cur=lvlData(lvl).xp, nxt=nextXP(lvl);
+  return Math.min(100,Math.max(0,((xp-cur)/(nxt-cur))*100));
+}
+function calcLevel(xp){
+  let lv=1;
+  for(const l of LEVELS){ if(xp>=l.xp) lv=l.lvl; }
+  return lv;
+}
+function calcRank(){
+  const all=[G.p.xp,...G.bots.map(b=>b.xp)].sort((a,b)=>b-a);
+  return all.indexOf(G.p.xp)+1;
+}
+function vitPct(){ return Math.min(100,Math.round(G.p.xp/100)); }
+
+/* ══════════════════════════════════════════
+   SAVE
+══════════════════════════════════════════ */
+function save(){
+  const p=G.p;
+  localStorage.setItem('vq_name',   p.name);
+  localStorage.setItem('vq_xp',     p.xp);
+  localStorage.setItem('vq_coins',  p.coins);
+  localStorage.setItem('vq_streak', p.streak);
+  localStorage.setItem('vq_strikes',p.strikes);
+  localStorage.setItem('vq_level',  p.level);
+}
+
+/* ══════════════════════════════════════════
+   UI UPDATE
+══════════════════════════════════════════ */
+function ui(){
+  const p=G.p, pct=xpPct(p.xp,p.level), nxt=nextXP(p.level);
+  const rank=calcRank(), rnkName=lvlData(p.level).rank, vit=vitPct();
+
+  // Header
+  _('h-xp').textContent     = p.xp;
+  _('h-coins').textContent  = p.coins;
+  _('h-strikes').textContent= p.strikes;
+  _('h-level').textContent  = p.level;
+
+  // World HUD
+  _('hud-name').textContent     = p.name.toUpperCase();
+  _('hud-lvl').textContent      = p.level;
+  _('hud-rank-name').textContent= rnkName;
+  _('hud-xp-cur').textContent   = p.xp;
+  _('hud-xp-max').textContent   = nxt;
+  _('hud-xpfill').style.width   = pct+'%';
+  _('hud-coins').textContent    = p.coins;
+  _('hud-rank-num').textContent = rank;
+  _('hud-zone').textContent     = ZONES[p.zone]?.name||'Campus';
+  _('hud-streak').textContent   = p.streak;
+  _('hud-strikes').textContent  = p.strikes;
+
+  // Player avatar
+  _('player-av-name').textContent = p.name;
+  _('player-lvl-badge').textContent = p.level;
+  _('pp-name').textContent   = p.name;
+  _('pp-lvl').textContent    = p.level;
+  _('pp-xp').textContent     = p.xp;
+  _('pp-coins').textContent  = p.coins;
+  _('pp-streak').textContent = p.streak+'d';
+  _('pp-strikes').textContent= p.strikes;
+  _('pp-xpbar').style.width  = pct+'%';
+
+  // Me screen
+  _('me-lvl-crown').textContent= p.level;
+  _('me-name').textContent     = p.name;
+  _('me-level').textContent    = p.level;
+  _('me-rank').textContent     = rnkName;
+  _('me-xp').textContent       = p.xp;
+  _('me-coins').textContent    = p.coins;
+  _('me-streak').textContent   = p.streak+' days';
+  _('me-strikes').textContent  = p.strikes;
+  _('me-ranknum').textContent  = '#'+rank;
+  _('me-xpbar').style.width    = pct+'%';
+  _('me-xpcur').textContent    = p.xp;
+  _('me-xpnxt').textContent    = nxt;
+  _('me-habits').textContent   = p.habitsToday;
+  _('me-quests').textContent   = p.questsDone;
+  _('me-badges').textContent   = p.badgesEarned;
+  _('me-vitality').textContent = vit+'%';
+
+  // Campus vitality
+  _('vit-fill').style.width = vit+'%';
+
+  // Campus transformation
+  applyCampusVitality(p.xp);
+
+  // Bots
+  G.bots.forEach((b,i)=>{
+    const bpct=xpPct(b.xp,b.lvl);
+    _(`b${i}-lvl`).textContent    = b.lvl;
+    _(`b${i}-xp`).textContent     = b.xp;
+    _(`b${i}-streak`).textContent = b.streak+'d';
+    _(`b${i}-zone`).textContent   = ZONES[b.zone]?.name||b.zone;
+    _(`b${i}-bar`).style.width    = bpct+'%';
+    _(`b${i}-act`).textContent    = ZONES[b.zone]?.icon||'🧍';
+  });
+
+  // Profile card in ME screen
+  if(G.profile){
+    const pc=_('me-profile-card');
+    if(pc) pc.style.display='block';
+    const s=(id,v)=>{ const el=_(id); if(el) el.textContent=v; };
+    s('me-bmi',        G.profile.bmi||'—');
+    s('me-bmi-status', G.profile.bmiStatus||'—');
+    s('me-fitness-lvl',G.profile.fitnessLvl||'—');
+    s('me-xp-mult',    `×${(G.profile.mult||1).toFixed(1)}`);
+    s('me-calories',   G.profile.tdee ? G.profile.tdee+' kcal' : '—');
+    s('me-protein',    G.profile.protein ? G.profile.protein+'g' : '—');
+  }
+}
+
+function _(id){ return document.getElementById(id) }
+
+/* ══════════════════════════════════════════
+   CAMPUS TRANSFORMATION
+══════════════════════════════════════════ */
+function applyCampusVitality(xp){
+  // Trees at 1000 XP
+  const trees=_('vit-trees');
+  if(xp>=1000){ trees.style.opacity='1' }
+
+  // Flowers at 5000 XP
+  ['vit-flowers1','vit-flowers2','vit-flowers3'].forEach(id=>{
+    _(id).style.opacity = xp>=5000?'1':'0';
+  });
+
+  // Festival at 10000 XP
+  _('vit-festival').style.opacity = xp>=10000?'1':'0';
+
+  // Map color shift
+  const grass=document.getElementById('ground-grass');
+  if(xp>=5000){
+    grass.style.background='linear-gradient(180deg,#66BB6A 0%,#4CAF50 100%)';
+  } else if(xp>=1000){
+    grass.style.background='linear-gradient(180deg,#4CAF50 0%,#388E3C 100%)';
+  }
+}
+
+/* ══════════════════════════════════════════
+   DYNAMIC SKY (real-time clock)
+══════════════════════════════════════════ */
+function updateSky(){
+  const h = new Date().getHours();
+  const sky  = _('world-sky');
+  const stars= _('stars');
+  const cel  = _('celestial');
+  const grass= _('ground-grass');
+
+  // Remove all sky classes
+  sky.className = '';
+
+  if(h>=5 && h<8){         // Dawn
+    sky.classList.add('sky-dawn');
+    cel.className='sun-obj';cel.style.cssText='top:15%;right:20%';
+    stars.classList.remove('show');
+    grass.classList.add('grass-day');grass.classList.remove('grass-night');
+  } else if(h>=8 && h<12){ // Morning
+    sky.classList.add('sky-morning');
+    cel.className='sun-obj';cel.style.cssText='top:8%;right:12%';
+    stars.classList.remove('show');
+    grass.classList.add('grass-day');grass.classList.remove('grass-night');
+  } else if(h>=12&&h<17){  // Day
+    sky.classList.add('sky-day');
+    cel.className='sun-obj';cel.style.cssText='top:5%;right:10%';
+    stars.classList.remove('show');
+    grass.classList.add('grass-day');grass.classList.remove('grass-night');
+  } else if(h>=17&&h<20){  // Evening
+    sky.classList.add('sky-evening');
+    cel.className='sun-obj';cel.style.cssText='top:20%;right:8%;background:#FF8C00;border-color:#CC6600';
+    stars.classList.remove('show');
+    grass.classList.add('grass-night');grass.classList.remove('grass-day');
+  } else {                  // Night
+    sky.classList.add('sky-night');
+    cel.className='moon-obj';cel.style.cssText='top:10%;right:12%';
+    stars.classList.add('show');
+    grass.classList.add('grass-night');grass.classList.remove('grass-day');
+  }
+
+  // Clock display
+  const now=new Date();
+  const hh=String(now.getHours()).padStart(2,'0');
+  const mm=String(now.getMinutes()).padStart(2,'0');
+  const period=['🌙','🌙','🌙','🌙','🌙','🌅','🌅','🌅','☀️','☀️','☀️','☀️','☀️','☀️','☀️','☀️','☀️','🌆','🌆','🌆','🌙','🌙','🌙','🌙'][h];
+  _('world-time').textContent = `${period} ${hh}:${mm}`;
+}
+
+function buildStars(){
+  const c=_('stars');
+  for(let i=0;i<60;i++){
+    const s=document.createElement('div');
+    s.className='star';
+    s.style.cssText=`
+      width:${Math.random()<.7?2:3}px;height:${Math.random()<.7?2:3}px;
+      left:${Math.random()*100}%;top:${Math.random()*100}%;
+      animation-delay:${Math.random()*3}s;animation-duration:${1.5+Math.random()*2}s;
+    `;
+    c.appendChild(s);
+  }
+}
+
+/* ══════════════════════════════════════════
+   TAB NAVIGATION
+══════════════════════════════════════════ */
+const TABS=['world','log','social','rewards','me'];
+function switchTab(id){
+  TABS.forEach(t=>{
+    _('screen-'+t)?.classList.remove('active');
+    _('bnav-'+t)?.classList.remove('active');
+  });
+  _('screen-'+id)?.classList.add('active');
+  _('bnav-'+id)?.classList.add('active');
+  // Strike for opening app
+  if(id==='world') addStrike('open');
+}
+
+/* ══════════════════════════════════════════
+   ZONE VISIT
+══════════════════════════════════════════ */
+function visitZone(zoneId){
+  const z=ZONES[zoneId]; if(!z) return;
+  G.p.zone=zoneId;
+  const av=_('av-player');
+  av.style.left=z.lft; av.style.top=z.top;
+  _('player-act').textContent=z.icon;
+  _('pp-zone').textContent=z.name;
+  ui();
+  toast(z.icon,`Visiting ${z.name}`,`Tap LOG to earn XP here!`);
+  // Auto-switch to log tab after short delay
+  setTimeout(()=>switchTab('log'),600);
+}
+
+/* ══════════════════════════════════════════
+   XP + LEVEL ENGINE
+══════════════════════════════════════════ */
+window.gainXP = function(xpAmt, coinAmt=0, source=''){
+  const p=G.p;
+  const oldLvl=p.level;
+  p.xp    += xpAmt;
+  p.coins += coinAmt;
+  p.level  = calcLevel(p.xp);
+  if(p.level>oldLvl) showLvlUp(p.level);
+  save(); ui();
+  if(source) toast('⭐',`+${xpAmt} XP!`,`+${coinAmt} 🪙  from ${source}`);
+};
+
+/* ══════════════════════════════════════════
+   STRIKE POINTS
+══════════════════════════════════════════ */
+const _strikeLog={};
+window.addStrike = function(type){
+  const today=new Date().toDateString();
+  const key=type+'_'+today;
+  if(_strikeLog[key]) return; // once per day per type
+  _strikeLog[key]=true;
+  G.p.strikes++;
+  save(); ui();
+  checkStrikeMilestone(G.p.strikes);
+};
+function checkStrikeMilestone(s){
+  const milestones={5:'🔰 Strike Starter',10:'⚡ Strike Warrior',25:'💎 Strike Master',50:'👑 Strike Legend',100:'🌟 Ultimate Striker'};
+  if(milestones[s]){
+    gainXP(100,50,'Strike Milestone');
+    toast('⚡',`Strike Milestone: ${s}!`,milestones[s]);
+  }
+}
+
+/* ══════════════════════════════════════════
+   PLAYER NAME
+══════════════════════════════════════════ */
+function setName(){
+  const v=_('name-input').value.trim();
+  if(!v) return;
+  G.p.name=v; save(); ui();
+  toast('✅','Name set!',`Welcome, ${v}!`);
+  _('name-input').value='';
+}
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+function toast(icon,title,msg=''){
+  const c=_('toasts');
+  const t=document.createElement('div');
+  t.className='toast';
+  t.innerHTML=`<span class="t-ico">${icon}</span>${title}<div class="t-msg">${msg}</div>`;
+  c.appendChild(t);
+  setTimeout(()=>t.remove(),3200);
+}
+
+/* ══════════════════════════════════════════
+   LEVEL UP OVERLAY
+══════════════════════════════════════════ */
+function showLvlUp(lvl){
+  _('lu-num').textContent  = lvl;
+  _('lu-rank').textContent = lvlData(lvl).rank;
+  _('lvlup').classList.add('show');
+  spawnParticles();
+  // FIX: special unlock notifications
+  if(lvl===3) setTimeout(()=>toast('🏟️','SportZone Unlocked!','Gym Day Pass now available in Shop!'),1500);
+  if(lvl===5) setTimeout(()=>toast('☕','VIP Café Deal Unlocked!','Exclusive 25% off in Rewards!'),1500);
+  if(lvl===7) setTimeout(()=>toast('🪽','Wellness Wings Unlocked!','New cosmetic in Shop!'),1500);
+}
+function closeLvlUp(){ _('lvlup').classList.remove('show'); _('ptcls').innerHTML=''; }
+
+function spawnParticles(){
+  const c=_('ptcls'); c.innerHTML='';
+  const colors=['#FFD700','#00BFFF','#39FF14','#FF8C00','#ff69b4','#ffffff'];
+  for(let i=0;i<50;i++){
+    const p=document.createElement('div');
+    p.className='ptcl';
+    const dx=(Math.random()-.5)*700, dy=(Math.random()-.5)*700;
+    p.style.cssText=`
+      left:50%;top:50%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      --dx:${dx}px;--dy:${dy}px;
+      --dur:${.8+Math.random()*.7}s;
+      animation-delay:${Math.random()*.3}s;
+    `;
+    c.appendChild(p);
+  }
+}
+
+/* ══════════════════════════════════════════
+   BOT AI — roam & gain XP
+══════════════════════════════════════════ */
+const zoneKeys=Object.keys(ZONES);
+function botTick(){
+  G.bots.forEach((b,i)=>{
+    if(Math.random()<.35){
+      b.zone=zoneKeys[Math.floor(Math.random()*zoneKeys.length)];
+    }
+    b.xp += Math.floor(Math.random()*6)+1;
+    b.lvl = calcLevel(b.xp);
+
+    const z=ZONES[b.zone];
+    if(z){
+      const av=_(`av-b${i}`);
+      if(av){
+        const offX=(Math.random()-.5)*5, offY=(Math.random()-.5)*4;
+        av.style.left=`calc(${z.lft} + ${offX}%)`;
+        av.style.top =`calc(${z.top} + ${offY}%)`;
+      }
+    }
+  });
+  ui();
+}
+
+/* ══════════════════════════════════════════
+   CHUNK 2 — LOG HABIT ENGINE (v2 — fixed)
+══════════════════════════════════════════ */
+
+/* ── State extensions ── */
+G.log = {
+  waterToday:    load('vq_water', 0),
+  mealsToday:    load('vq_meals', []),
+  studySessions: load('vq_study', 0),
+  sleepQuality:  0,
+  selectedEx:    'pullup',
+  dailyXP:       load('vq_daily_xp', 0),   // FIX: track daily XP properly
+  lastCombo:     0,                          // FIX: combo timer
+  exHistory:     load('vq_ex_hist', []),    // FIX: exercise history
+  exConfig: {
+    pullup: {label:'Pull Up',    metric:'reps', xp:50,  coins:10},
+    pushup: {label:'Push Up',    metric:'reps', xp:45,  coins:9},
+    bench:  {label:'Bench Press',metric:'both', xp:60,  coins:12},
+    squat:  {label:'Squat',      metric:'both', xp:55,  coins:11},
+    running:{label:'Running',    metric:'dist', xp:70,  coins:14},
+    cycling:{label:'Cycling',    metric:'dist', xp:60,  coins:12},
+    plank:  {label:'Plank',      metric:'dur',  xp:40,  coins:8},
+    gym:    {label:'Gym Session', metric:'dur', xp:90,  coins:18},
+  },
+};
+G.quests  = load('vq_quests', null);
+G.profile = load('vq_profile', null);
+
+/* ── Multiplier from fitness level ── */
+function getMultiplier(){
+  const base = G.profile ? (G.profile.mult||1.0) : 1.0;
+  // Early bird: before 8am → +20%
+  const h = new Date().getHours();
+  return h>=5&&h<8 ? +(base*1.2).toFixed(1) : base;
+}
+
+/* ── Early bird badge ── */
+function checkEarlyBird(){
+  const h=new Date().getHours();
+  const badge=_('earlybird-badge');
+  if(badge) badge.style.display=(h>=5&&h<8)?'block':'none';
+}
+
+/* ── XP Fly animation ── */
+function flyXP(xpAmt, coinAmt){
+  const xf=document.createElement('div');
+  xf.className='xp-fly';
+  xf.textContent=`+${xpAmt} XP`;
+  xf.style.cssText=`left:${25+Math.random()*50}%;top:35%`;
+  document.body.appendChild(xf);
+  setTimeout(()=>xf.remove(),1600);
+
+  const cf=document.createElement('div');
+  cf.className='coin-fly';
+  cf.textContent=`🪙+${coinAmt}`;
+  cf.style.cssText=`left:${25+Math.random()*50}%;top:42%`;
+  document.body.appendChild(cf);
+  setTimeout(()=>cf.remove(),1600);
+
+  // Flash banner
+  const fl=_('xp-flash');
+  if(fl){
+    _('xp-flash-amt').textContent=xpAmt;
+    _('coin-flash-amt').textContent=coinAmt;
+    fl.style.display='block';
+    setTimeout(()=>{ fl.style.display='none'; },1100);
+  }
+
+}
+
+/* ── Combo multiplier ── */
+function checkCombo(){
+  const now=Date.now();
+  if(G.log.lastCombo && now-G.log.lastCombo < 300000){ // within 5 min
+    const cf=_('combo-flash');
+    if(cf){
+      cf.style.display='block';
+      cf.textContent='🔥 COMBO! +10% XP';
+      setTimeout(()=>{ cf.style.display='none'; },900);
+    }
+    return 1.1; // +10% combo bonus
+  }
+  G.log.lastCombo=now;
+  return 1.0;
+}
+
+/* ── Daily XP target bar update ── */
+function updateDailyXPBar(){
+  const target = G.profile ? {Beginner:300,Intermediate:450,Advanced:600}[G.profile.fitnessLvl]||450 : 450;
+  const cur = G.log.dailyXP;
+  const pct = Math.min(100,Math.round((cur/target)*100));
+  const fill=_('dxp-fill'), curEl=_('dxp-cur'), tgtEl=_('dxp-target');
+  if(fill) fill.style.width=pct+'%';
+  if(curEl) curEl.textContent=cur;
+  if(tgtEl) tgtEl.textContent=target;
+  if(pct>=100 && cur-G.log._lastDailyNotif>target){
+    G.log._lastDailyNotif=cur;
+    toast('🎯','Daily Target Reached!','Amazing work today! 🎉');
+  }
+}
+
+/* ── Unified earn with all multipliers ── */
+function earnXP(baseXP, baseCoins, source, category=''){
+  const mult   = getMultiplier();
+  const combo  = checkCombo();
+  const streak = G.p.streak;
+  let streakMult=1;
+  if(streak>=14) streakMult=1.6;
+  else if(streak>=7) streakMult=1.4;
+  else if(streak>=3) streakMult=1.25;
+
+  const finalXP    = Math.round(baseXP * mult * combo * streakMult);
+  const finalCoins = Math.round(baseCoins * mult);
+
+  flyXP(finalXP, finalCoins);
+  gainXP(finalXP, finalCoins, source);
+
+  // Update daily XP
+  G.log.dailyXP += finalXP;
+  localStorage.setItem('vq_daily_xp', G.log.dailyXP);
+
+  G.p.habitsToday++;
+  addStrike('activity');
+  if(category) _catsToday.add(category);
+  checkDiversity();
+  updateQuestProgress(source, category);
+  updateLogUI();
+  save();
+}
+
+/* ── Streak multiplier text ── */
+function updateStreakBonus(){
+  const s=G.p.streak;
+  const el=_('streak-bonus-txt');
+  if(!el) return;
+  if(s>=14)     { el.textContent='+60% XP'; el.style.color='var(--gold)'; }
+  else if(s>=7) { el.textContent='+40% XP'; el.style.color='var(--orange)'; }
+  else if(s>=3) { el.textContent='+25% XP'; el.style.color='var(--xp)'; }
+  else          { el.textContent='None — log 3 days!'; el.style.color='var(--gray)'; }
+  const ln=_('log-streak-num'); if(ln) ln.textContent=G.p.streak;
+  const mv=_('mult-val');       if(mv) mv.textContent=getMultiplier().toFixed(1);
+  checkEarlyBird();
+  updateDailyXPBar();
+}
+
+/* ── Diversity bonus ── */
+const _catsToday=new Set();
+function checkDiversity(){
+  if(_catsToday.size>=4 && !_catsToday.has('_diversity_done')){
+    _catsToday.add('_diversity_done');
+    gainXP(30,8,'Diversity Bonus');
+    toast('🌈','Well-Rounded Student!','+30 XP · +8 🪙 — 4 categories!');
+  }
+}
+
+/* ════ HYDRATION ════ */
+function logHydration(ml){
+  G.log.waterToday += ml;
+  localStorage.setItem('vq_water', G.log.waterToday);
+  const base=Math.round((ml/500)*20);
+  earnXP(base, Math.round(base/5), `💧 +${ml}ml Water`, 'hydration');
+  updateWaterMeter();
+  if(G.log.waterToday>=2000 && G.log.waterToday-ml<2000){
+    gainXP(50,10,'💧 2L Goal!'); toast('💧','2L Goal Reached!','+50 XP · +10 🪙');
+  }
+  if(G.log.waterToday>=3000 && G.log.waterToday-ml<3000){
+    gainXP(80,15,'💧 3L Legend!'); toast('💧','3L Legend!','+80 XP · +15 🪙');
+  }
+}
+function logHydrationCustom(){
+  const v=parseInt(_('water-custom').value)||0;
+  if(v<50||v>2000){ toast('⚠️','Invalid amount','Enter 50–2000 ml'); return; }
+  _('water-custom').value=''; logHydration(v);
+}
+function updateWaterMeter(){
+  const w=G.log.waterToday, pct=Math.min(100,(w/2000)*100);
+  const fill=_('water-meter-fill'); if(fill) fill.style.width=pct+'%';
+  const cur=_('water-cur');         if(cur)  cur.textContent=w;
+  const badge=_('water-goal-badge');if(badge) badge.style.display=w>=2000?'block':'none';
+}
+
+/* ════ EXERCISE ════ */
+let _selExBtn=null;
+function selectEx(btn,exId){
+  if(_selExBtn) _selExBtn.classList.remove('active');
+  btn.classList.add('active'); _selExBtn=btn;
+  G.log.selectedEx=exId;
+  const cfg=G.log.exConfig[exId];
+  const metric=cfg.metric;
+  _('ex-reps-wrap').style.display   =(metric==='reps'||metric==='both')?'block':'none';
+  _('ex-weight-wrap').style.display =(metric==='both')?'block':'none';
+  _('ex-dist-wrap').style.display   =(metric==='dist')?'block':'none';
+  _('ex-dur-wrap').style.display    =(metric==='dur')?'block':'none';
+  const xpEl=_('ex-xp-preview');
+  if(xpEl){
+    const mult=getMultiplier();
+    xpEl.textContent=`${cfg.label}: ~${Math.round(cfg.xp*mult)} XP · +${Math.round(cfg.coins*mult)} 🪙 (×${mult.toFixed(1)})`;
+  }
+  renderExHistory();
+}
+
+function logExercise(){
+  const exId=G.log.selectedEx, cfg=G.log.exConfig[exId], metric=cfg.metric;
+  let valid=true, detail='', recType='', recVal=0;
+
+  if(metric==='reps'||metric==='both'){
+    const sets=parseInt(_('ex-sets').value)||0, reps=parseInt(_('ex-reps').value)||0;
+    if(sets<1||reps<1){ valid=false; }
+    else { detail=`${sets}×${reps} reps`; recType='reps'; recVal=sets*reps; }
+  }
+  if(metric==='both'){
+    const kg=parseFloat(_('ex-weight').value)||0;
+    if(kg>0){ detail+=` @ ${kg}kg`; recType='weight'; recVal=kg; }
+  }
+  if(metric==='dist'){
+    const km=parseFloat(_('ex-dist').value)||0;
+    if(km<0.1){ valid=false; } else { detail=`${km} km`; recType='dist'; recVal=km; }
+  }
+  if(metric==='dur'){
+    const min=parseInt(_('ex-dur').value)||0;
+    if(min<1){ valid=false; } else { detail=`${min} min`; recType='dur'; recVal=min; }
+  }
+  if(!valid){ toast('⚠️','Fill in your numbers!','Enter valid sets/reps/weight/distance'); return; }
+
+  // FIX: update record for correct type
+  if(recType && recVal) updateExRecord(exId, recType, recVal, cfg.label);
+
+  // Save history
+  G.log.exHistory.unshift({ex:cfg.label, detail, time:new Date().toLocaleTimeString()});
+  if(G.log.exHistory.length>9) G.log.exHistory.pop();
+  localStorage.setItem('vq_ex_hist', JSON.stringify(G.log.exHistory));
+
+  earnXP(cfg.xp, cfg.coins, cfg.label, 'exercise');
+  toast('💪',`${cfg.label} logged!`, detail);
+  // FIX: clear inputs after logging
+  ['ex-sets','ex-reps','ex-weight','ex-dist','ex-dur'].forEach(id=>{
+    const el=_(id); if(el) el.value='';
+  });
+  renderExHistory();
+}
+
+/* FIX: personal record tracks all types */
+function updateExRecord(exId, type, val, label){
+  const key=`vq_rec_${exId}_${type}`;
+  const prev=parseFloat(localStorage.getItem(key)||'0');
+  if(val>prev){
+    localStorage.setItem(key,val);
+    const units={reps:'reps',weight:'kg',dist:'km',dur:'min'};
+    toast('🏆',`New PB: ${label}!`,`${val} ${units[type]||''}`);
+  }
+}
+
+
+/* Bot companion log */
+function logWithBot(){
+  const bots=['Amir HIT 💪','Siti Wellness 🌸','Haziq Grind 📖','Farah Active ⚡'];
+  const bot=bots[Math.floor(Math.random()*bots.length)];
+  earnXP(55,11,`Group Activity with ${bot}`,'exercise');
+  // Bot gains XP too
+  const bi=Math.floor(Math.random()*4); G.bots[bi].xp+=30;
+  toast('👥',`Logged with ${bot}!`,'+55 XP · +11 🪙 companion bonus!');
+}
+
+/* ════ SLEEP ════ */
+let _sleepQ=0;
+function setSleepQuality(q){
+  _sleepQ=q;
+  const qv=_('sleep-q-val'); if(qv) qv.textContent=q;
+  // FIX: use .lit class for star highlighting
+  document.querySelectorAll('.star-btn').forEach((b,i)=>{
+    b.classList.toggle('lit', i<q);
+    b.textContent = i<q ? '⭐' : '☆';
+  });
+}
+function setSleepPreset(h){ const el=_('sleep-hours'); if(el) el.value=h; }
+function logSleep(){
+  const h=parseFloat(_('sleep-hours').value)||0;
+  if(h<1||h>14){ toast('⚠️','Invalid hours','Enter 1–14 hours'); return; }
+  let baseXP=40,baseCoins=8,label='😴 Sleep';
+  if(h>=7&&h<=9){ baseXP=80; baseCoins=15; label='😴 Great Sleep (7–9h)'; }
+  else if(h>=6) { baseXP=50; baseCoins=10; label='😴 Good Sleep (6–7h)'; }
+  if(_sleepQ>=4){ baseXP+=20; baseCoins+=5; }
+  earnXP(baseXP, baseCoins, label, 'sleep');
+  toast('😴','Sleep logged!',`${h}h · Quality ${_sleepQ||'—'}⭐`);
+  const el=_('sleep-hours'); if(el) el.value='';
+  setSleepQuality(0);
+}
+
+/* ════ NUTRITION ════ */
+const _mealLog=load('vq_meals',[]); // FIX: restore from localStorage
+function logMeal(type){
+  const xpMap  ={balanced:35,snack:30,protein:35,veggie:40};
+  const coinMap={balanced:7, snack:6, protein:7, veggie:8};
+  const labelMap={balanced:'🍱 Balanced Meal',snack:'🍎 Healthy Snack',protein:'🥩 High Protein',veggie:'🥦 Veggie Plate'};
+  const emoMap  ={balanced:'🍱',snack:'🍎',protein:'🥩',veggie:'🥦'};
+  _mealLog.push(type);
+  localStorage.setItem('vq_meals', JSON.stringify(_mealLog));
+  earnXP(xpMap[type], coinMap[type], labelMap[type], 'nutrition');
+  const display=_('meal-log');
+  if(display) display.textContent=_mealLog.map(m=>emoMap[m]).join(' ')||'None yet';
+  const balanced=_mealLog.filter(m=>m==='balanced').length;
+  if(balanced===3){
+    gainXP(120,25,'3 Balanced Meals');
+    const badge=_('triple-meal-badge'); if(badge) badge.style.display='block';
+    toast('🍱','Triple Meal Master!','+120 XP · +25 🪙 bonus!');
+  }
+}
+
+/* ════ MINDFULNESS ════ */
+const JOURNAL_PROMPTS=[
+  'What made you smile today?',
+  'Name 3 things you are grateful for.',
+  'What healthy choice are you proud of today?',
+  'How did you take care of your body today?',
+  'What would you tell your future self right now?',
+];
+function logMindful(type,mins){
+  if(type==='journal'){
+    const ja=_('journal-area'); if(ja) ja.style.display='block';
+    const jp=_('journal-prompt');
+    if(jp) jp.textContent=JOURNAL_PROMPTS[Math.floor(Math.random()*JOURNAL_PROMPTS.length)];
+    return;
+  }
+  const xpMap  ={meditation:mins>=10?40:30, break:25};
+  const coinMap={meditation:mins>=10?8:6,   break:5};
+  const label=type==='meditation'?`🧘 Meditation ${mins}min`:'⏱️ Pomodoro Break';
+  earnXP(xpMap[type], coinMap[type], label, 'mindful');
+  toast('🧘',`${label} logged!`,'Mind balanced!');
+}
+function submitJournal(){
+  const t=_('journal-text');
+  if(!t||t.value.trim().length<5){ toast('⚠️','Write more!','At least a few words'); return; }
+  earnXP(35,7,'📔 Journal Entry','mindful');
+  toast('📔','Journal saved!','+35 XP · Reflection unlocked!');
+  t.value='';
+  const ja=_('journal-area'); if(ja) ja.style.display='none';
+}
+
+/* ════ STUDY ════ */
+function logStudy(type){
+  const xpMap  ={25:25,50:40,stretch:20,outdoor:45};
+  const coinMap={25:5, 50:8, stretch:4, outdoor:9};
+  const labelMap={25:'⏱️ 25min Study',50:'⏱️ 50min Study',stretch:'🤸 Stretch Break',outdoor:'🌿 Outdoor Walk'};
+  G.log.studySessions++;
+  localStorage.setItem('vq_study', G.log.studySessions);
+  earnXP(xpMap[type], coinMap[type], labelMap[type], 'study');
+  const ss=_('study-sessions'); if(ss) ss.textContent=G.log.studySessions;
+  toast('📚',`${labelMap[type]}!`,`Session #${G.log.studySessions} today`);
+}
+
+/* ════ CALCULATOR ════ */
+function runCalc(){
+  const age=parseInt(_('calc-age').value)||0;
+  const wt =parseFloat(_('calc-weight').value)||0;
+  const ht =parseFloat(_('calc-height').value)||0;
+  const gen=_('calc-gender').value;
+  if(age<10||wt<30||ht<100){ toast('⚠️','Fill all fields!','Age, weight, height required'); return; }
+
+  const htM=ht/100;
+  const bmi=+(wt/(htM*htM)).toFixed(1);
+  let bmiStatus='Normal ✅';
+  if(bmi<18.5)     bmiStatus='Underweight ⚠️';
+  else if(bmi>=30) bmiStatus='Obese ⚠️';
+  else if(bmi>=25) bmiStatus='Overweight ⚡';
+
+  // Fitness level
+  let fitnessLvl='Beginner', mult=1.5;
+  if(age<=25&&bmi>=18.5&&bmi<25){ fitnessLvl='Intermediate'; mult=1.0; }
+  if(age<=22&&bmi>=18.5&&bmi<23){ fitnessLvl='Advanced';     mult=0.8; }
+
+  // VO2 max estimate
+  const vo2=Math.round((gen==='m'?52:44)-(age*0.18)+(bmi<25?3:0));
+
+  // Caloric needs (Mifflin-St Jeor simplified)
+  const bmr = gen==='m'
+    ? Math.round(10*wt + 6.25*ht - 5*age + 5)
+    : Math.round(10*wt + 6.25*ht - 5*age - 161);
+  const activityMult={Beginner:1.375,Intermediate:1.55,Advanced:1.725};
+  const tdee=Math.round(bmr * activityMult[fitnessLvl]);
+  const protein=Math.round(wt * (fitnessLvl==='Advanced'?2.0:fitnessLvl==='Intermediate'?1.6:1.2));
+
+  // Targets & exercises per level
+  const targets={
+    Beginner:    ['💧 6 glasses water/day','🏃 10–15 min walk','💪 5–8 push-ups','😴 7h sleep','🥗 2 balanced meals'],
+    Intermediate:['💧 8 glasses water/day','🏃 30 min run','💪 15–20 push-ups','😴 7.5h sleep','🥗 3 balanced meals'],
+    Advanced:    ['💧 10 glasses water/day','🏃 5km run','💪 30+ push-ups','😴 8h sleep','🥗 High-protein meals'],
+  };
+  const exercises={
+    Beginner:    [`⬆️ Pull Up: 3×5 reps`,`💪 Push Up: 3×8 reps`,`🦵 Squat: 3×10 (bodyweight)`,`⏱️ Plank: 3×20s`],
+    Intermediate:[`⬆️ Pull Up: 3×10 reps`,`🏋️ Bench: 3×8 @ ${Math.round(wt*0.6)}kg`,`🏃 Run: 3km/day`,`🦵 Squat: 3×12 @ ${Math.round(wt*0.7)}kg`],
+    Advanced:    [`⬆️ Pull Up: 4×12 reps`,`🏋️ Bench: 4×8 @ ${Math.round(wt*1.0)}kg`,`🏃 Run: 5km/day`,`🦵 Squat: 4×10 @ ${Math.round(wt*1.2)}kg`],
+  };
+
+  // Store temp profile
+  window._calcResult={bmi,bmiStatus,fitnessLvl,mult,vo2,tdee,protein,age,wt,ht,gen};
+
+  // Render
+  _('cr-bmi').textContent      = bmi;
+  _('cr-status').textContent   = bmiStatus;
+  _('cr-level').textContent    = fitnessLvl;
+  _('cr-mult').textContent     = `×${mult.toFixed(1)} XP`;
+  _('cr-vo2').textContent      = `~${vo2} ml/kg/min`;
+  _('cr-calories').textContent = `${tdee} kcal/day`;
+  _('cr-protein').textContent  = `${protein}g/day`;
+  _('cr-targets').innerHTML    = targets[fitnessLvl].map(t=>`✅ ${t}`).join('<br>');
+  _('cr-exercises').innerHTML  = exercises[fitnessLvl].map(e=>`💪 ${e}`).join('<br>');
+  _('calc-result').style.display='block';
+  _('calc-applied-badge').style.display='none';
+  // FIX: scroll result into view on mobile
+  setTimeout(()=>{ const el=_('calc-result'); if(el) el.scrollIntoView({behavior:'smooth',block:'nearest'}); },100);
+
+  gainXP(50,10,'🧮 Smart Calculator');
+  updateStreakBonus();
+  toast('🧮','Profile calculated!',`${fitnessLvl} · BMI ${bmi} · ×${mult.toFixed(1)} XP`);
+}
+
+/* Apply profile to game state */
+function applyProfile(){
+  if(!window._calcResult){ toast('⚠️','Run calculator first!',''); return; }
+  G.profile={...window._calcResult};
+  localStorage.setItem('vq_profile', JSON.stringify(G.profile));
+  const badge=_('calc-applied-badge'); if(badge) badge.style.display='block';
+  updateStreakBonus(); updateDailyXPBar(); ui();
+  toast('✅','Profile Applied!',`XP Multiplier set to ×${G.profile.mult.toFixed(1)}`);
+}
+
+/* ════ CATEGORY TAB SWITCHING ════ */
+function selectCat(id){
+  document.querySelectorAll('.cat-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.cat-panel').forEach(p=>p.classList.remove('active'));
+  const tab=_('ct-'+id), panel=_('cp-'+id);
+  if(tab)   tab.classList.add('active');
+  if(panel) panel.classList.add('active');
+  // Pre-fill exercise selector on first open
+  if(id==='exercise' && !_selExBtn){
+    const defBtn=_('ex-pullup');
+    if(defBtn) selectEx(defBtn,'pullup');
+  }
+  if(id==='hydration') updateWaterMeter();
+  updateStreakBonus();
+}
+
+/* ════ DAILY STREAK — FIXED ════ */
+function checkDailyStreak(){
+  const today    = new Date().toDateString();
+  const lastDate = localStorage.getItem('vq_lastday');
+  const yesterday= new Date(Date.now()-86400000).toDateString();
+  if(lastDate===today) return;
+  if(lastDate===yesterday){
+    G.p.streak++;
+    toast('🔥',`Streak: ${G.p.streak} days!`,'Keep it up!');
+  } else if(lastDate && lastDate!==today){
+    // FIX: only show once per session
+    if(!sessionStorage.getItem('streak_card_shown')){
+      sessionStorage.setItem('streak_card_shown','1');
+      const card=_('streak-save-card');
+      if(card) card.style.display='block';
+      switchTab('me');
+    }
+  }
+  localStorage.setItem('vq_lastday', today);
+  // FIX: reset ALL daily counters on new day
+  G.log.dailyXP=0;      localStorage.setItem('vq_daily_xp',0);
+  G.log.waterToday=0;   localStorage.setItem('vq_water',0);
+  G.log.mealsToday=[];  localStorage.setItem('vq_meals','[]');
+  G.log.studySessions=0;localStorage.setItem('vq_study',0);
+  // FIX: clear in-memory meal array too
+  _mealLog.length=0;
+  const ml=_('meal-log'); if(ml) ml.textContent='None yet';
+  const ss=_('study-sessions'); if(ss) ss.textContent='0';
+  G.p.habitsToday=0;
+  _catsToday.clear();
+  save(); ui();
+}
+
+window.forgivStreak=function(){
+  if(G.p.coins<50){ toast('⚠️','Not enough coins!','Need 50 🪙'); return; }
+  G.p.coins-=50; G.p.streak++;
+  localStorage.setItem('vq_forgive',0);
+  save(); ui();
+  const card=_('streak-save-card'); if(card) card.style.display='none';
+  sessionStorage.removeItem('streak_card_shown');
+  toast('🔥','Streak saved!','50 🪙 spent — streak continues!');
+};
+
+window.dismissStreakSave=function(){
+  G.p.streak=0; save(); ui();
+  const card=_('streak-save-card'); if(card) card.style.display='none';
+  sessionStorage.removeItem('streak_card_shown');
+  toast('💔','Streak reset','Log today to start fresh!');
+};
+
+/* Zone pre-fill — called from visitZone */
+const ZONE_CAT_MAP={gym:'exercise',track:'exercise',water:'hydration',cafe:'nutrition',zen:'mindful',lib:'study',dorm:'sleep'};
+const _origVisitZone=window.visitZone||function(){};
+window.visitZone=function(zoneId){
+  const z=ZONES[zoneId]; if(!z) return;
+  G.p.zone=zoneId;
+  const av=_('av-player');
+  if(av){ av.style.left=z.lft; av.style.top=z.top; }
+  const pa=_('player-act'); if(pa) pa.textContent=z.icon;
+  const pz=_('pp-zone');    if(pz) pz.textContent=z.name;
+  const hz=_('hud-zone');   if(hz) hz.textContent=z.name;
+  ui();
+  toast(z.icon,`Visiting ${z.name}`,'Opening log...');
+  // Pre-select the right category
+  setTimeout(()=>{
+    switchTab('log');
+    const cat=ZONE_CAT_MAP[zoneId];
+    if(cat) selectCat(cat);
+  },500);
+};
+
+/* ════ QUEST SYSTEM ════ */
+const QUEST_POOL = [
+  {id:'hydration_hero', title:'Hydration Hero',   desc:'Drink 2000ml water today',        cat:'hydration', target:2000, xp:50,  coins:10},
+  {id:'movement_master',title:'Movement Master',  desc:'Log any exercise today',           cat:'exercise',  target:1,    xp:60,  coins:12},
+  {id:'mindful_moment', title:'Mindful Moment',   desc:'Log 10 min mindfulness',           cat:'mindful',   target:1,    xp:50,  coins:10},
+  {id:'sleep_champion', title:'Sleep Champion',   desc:'Log 7+ hours of sleep',            cat:'sleep',     target:7,    xp:60,  coins:12},
+  {id:'meal_tracker',   title:'Meal Tracker',     desc:'Log 2 balanced meals',             cat:'nutrition', target:2,    xp:55,  coins:11},
+  {id:'study_hero',     title:'Study Hero',       desc:'Log 2 study sessions',             cat:'study',     target:2,    xp:45,  coins:9},
+  {id:'well_rounded',   title:'Well-Rounded Day', desc:'Log 3 different categories',       cat:'any',       target:3,    xp:80,  coins:16},
+  {id:'hydration_3l',   title:'Hydration Legend', desc:'Drink 3000ml water today',        cat:'hydration', target:3000,  xp:80,  coins:15},
+  {id:'double_exercise',title:'Double Session',   desc:'Log exercise 2 times today',      cat:'exercise',  target:2,    xp:70,  coins:14},
+  {id:'zen_study',      title:'Mind & Study',     desc:'Log mindfulness + study break',   cat:'mindful',   target:1,    xp:60,  coins:12},
+  {id:'meal_protein',   title:'Protein Day',      desc:'Log a high-protein meal',         cat:'nutrition', target:1,    xp:45,  coins:9},
+  {id:'early_riser',    title:'Early Riser',      desc:'Log any habit before 9am',        cat:'any',       target:1,    xp:60,  coins:12},
+];
+const WEEKLY_QUEST = {id:'weekly_champ',title:'Weekly Champion',desc:'Log habits 5 days this week',xp:200,coins:40};
+
+function initQuests(){
+  const today = new Date().toDateString();
+  if(!G.quests || G.quests.date!==today){
+    // Pick 3 random daily quests
+    const shuffled=[...QUEST_POOL].sort(()=>Math.random()-.5);
+    G.quests={
+      date:today,
+      daily:shuffled.slice(0,3).map(q=>({...q,progress:0,done:false})),
+      weekly:{...WEEKLY_QUEST,progress:load('vq_wq_prog',0),done:load('vq_wq_done',false)},
+    };
+    localStorage.setItem('vq_quests', JSON.stringify(G.quests));
+  }
+  renderQuests();
+}
+
+function renderQuests(){
+  const ql=_('quest-list');
+  if(!ql||!G.quests) return;
+  ql.innerHTML='';
+  G.quests.daily.forEach((q,i)=>{
+    const pct=Math.min(100,Math.round((q.progress/q.target)*100));
+    const div=document.createElement('div');
+    div.className='quest-card'+(q.done?' done':'');
+    div.innerHTML=`
+      <div class="quest-title">${q.done?'✅ ':'🎯 '}${q.title}</div>
+      <div class="quest-desc">${q.desc}</div>
+      <div class="quest-prog-bar"><div class="quest-prog-fill${q.done?' done-fill':''}" style="width:${pct}%"></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div class="quest-reward">+${q.xp} XP · +${q.coins} 🪙</div>
+        <div style="font-size:15px;color:var(--gray)">${Math.min(q.progress,q.target)}/${q.target}</div>
+      </div>
+      ${q.done?'<div class="quest-done-badge">✅ COMPLETED!</div>':''}
+    `;
+    ql.appendChild(div);
+  });
+  // Weekly
+  const wq=G.quests.weekly;
+  const wqEl=_('weekly-quest');
+  if(wqEl){
+    const wpct=Math.min(100,Math.round((wq.progress/5)*100));
+    wqEl.className='quest-card'+(wq.done?' done':'');
+    wqEl.innerHTML=`
+      <div class="quest-title" style="color:var(--purple)">${wq.done?'✅ ':'📅 '}${wq.title}</div>
+      <div class="quest-desc">${wq.desc}</div>
+      <div class="quest-prog-bar"><div class="quest-prog-fill${wq.done?' done-fill':''}" style="width:${wpct}%;background:linear-gradient(90deg,#6a1a8a,var(--purple))"></div></div>
+      <div style="display:flex;justify-content:space-between">
+        <div class="quest-reward" style="color:var(--purple)">+${wq.xp} XP · +${wq.coins} 🪙</div>
+        <div style="font-size:15px;color:var(--gray)">${wq.progress}/5 days</div>
+      </div>
+      ${wq.done?'<div class="quest-done-badge">✅ WEEKLY COMPLETE!</div>':''}
+    `;
+  }
+}
+
+function updateQuestProgress(source, category){
+  if(!G.quests) return;
+  let changed=false;
+  G.quests.daily.forEach(q=>{
+    if(q.done) return;
+    let progress=false;
+    // FIX: use category param for reliable matching
+    if(q.cat==='hydration' && category==='hydration'){ q.progress=G.log.waterToday; progress=true; }
+    if(q.cat==='exercise'  && category==='exercise') { q.progress=Math.min(q.progress+1,q.target); progress=true; }
+    if(q.cat==='mindful'   && category==='mindful')  { q.progress=Math.min(q.progress+1,q.target); progress=true; }
+    if(q.cat==='sleep'     && category==='sleep')    { q.progress=Math.min(q.progress+8,q.target); progress=true; }
+    if(q.cat==='nutrition' && category==='nutrition'){ q.progress=Math.min(q.progress+1,q.target); progress=true; }
+    if(q.cat==='study'     && category==='study')    { q.progress=Math.min(q.progress+1,q.target); progress=true; }
+    if(q.cat==='any')                                { q.progress=_catsToday.size; progress=true; }
+    if(progress && !q.done && q.progress>=q.target){
+      q.done=true; changed=true;
+      G.p.questsDone++;
+      gainXP(q.xp, q.coins, `Quest: ${q.title}`);
+      toast('🗺️','Quest Complete!',`${q.title} — +${q.xp} XP!`);
+      checkAllQuestsBonus();
+    }
+  });
+  if(changed){ localStorage.setItem('vq_quests',JSON.stringify(G.quests)); renderQuests(); }
+}
+
+function checkAllQuestsBonus(){
+  const allDone=G.quests.daily.every(q=>q.done);
+  if(allDone){
+    gainXP(200,40,'All Daily Quests');
+    toast('🎉','ALL QUESTS DONE!','+200 XP · +40 🪙 Bonus!');
+    // Weekly progress
+    G.quests.weekly.progress++;
+    localStorage.setItem('vq_wq_prog', G.quests.weekly.progress);
+    if(G.quests.weekly.progress>=5 && !G.quests.weekly.done){
+      G.quests.weekly.done=true;
+      localStorage.setItem('vq_wq_done',true);
+      gainXP(WEEKLY_QUEST.xp, WEEKLY_QUEST.coins, 'Weekly Champion');
+      toast('👑','WEEKLY CHAMPION!',`+${WEEKLY_QUEST.xp} XP · +${WEEKLY_QUEST.coins} 🪙`);
+    }
+    renderQuests();
+  }
+}
+
+function updateLogUI(){
+  updateWaterMeter(); // always sync
+  updateStreakBonus();
+  renderQuests();
+  updateDailyXPBar();
+  renderExHistory();
+  // Restore meal log display
+  const display=_('meal-log');
+  if(display) display.textContent=_mealLog.map(m=>({balanced:'🍱',snack:'🍎',protein:'🥩',veggie:'🥦'})[m]).join(' ')||'None yet';
+  // Study sessions
+  const ss=_('study-sessions'); if(ss) ss.textContent=G.log.studySessions;
+}
+
+
+
+/* ══════════════════════════════════════════
+   CHUNK 4 — POLISH + DEMO + ONBOARDING
+══════════════════════════════════════════ */
+
+/* ── Onboarding ── */
+function showOnboard(){
+  _('onboard-overlay').style.display='flex';
+}
+function onboardNext(step){
+  document.querySelectorAll('.onboard-step').forEach(s=>s.style.display='none');
+  document.querySelectorAll('.ob-dot').forEach(d=>d.classList.remove('active'));
+  const s=_('onboard-step-'+step), d=_('od-'+step);
+  if(s) s.style.display='block';
+  if(d) d.classList.add('active');
+}
+function closeOnboard(){
+  _('onboard-overlay').style.display='none';
+  localStorage.setItem('vq_onboarded','1');
+  // Pulse zone tips for 5s to guide new user
+  document.querySelectorAll('.zone').forEach(z=>z.classList.add('zone-tip-pulse'));
+  setTimeout(()=>document.querySelectorAll('.zone').forEach(z=>z.classList.remove('zone-tip-pulse')),5000);
+  toast('🎮','Great! Click any zone to begin','Or tap LOG to earn your first XP!');
+}
+
+/* ── Quick Boost (judge tool) ── */
+function quickBoost(){
+  gainXP(300,100,'⚡ Quick Boost');
+  G.p.streak=Math.max(G.p.streak,3);
+  G.p.strikes+=5;
+  G.p.habitsToday+=3;
+  save(); ui(); updateLogUI();
+  checkBadges();
+  renderLeaderboard();
+  renderShop();
+  // Flash screen
+  document.body.classList.add('boost-flash');
+  setTimeout(()=>document.body.classList.remove('boost-flash'),1200);
+  setTimeout(checkBadges, 300);
+  toast('⚡','Quick Boost!','+300 XP · +100 🪙 · Streak boosted!');
+}
+
+/* ── Reset Game ── */
+function resetGame(){
+  _('reset-modal').style.display='flex';
+}
+function doReset(){
+  _('reset-modal').style.display='none';
+  const keys=['vq_name','vq_xp','vq_coins','vq_streak','vq_strikes','vq_level',
+    'vq_water','vq_meals','vq_study','vq_daily_xp','vq_quests','vq_profile',
+    'vq_badges','vq_owned','vq_lastday','vq_forgive','vq_ex_hist','vq_wq_prog','vq_wq_done'];
+  keys.forEach(k=>localStorage.removeItem(k));
+  // Clear exercise records
+  ['pullup','pushup','bench','squat','running','cycling','plank','gym'].forEach(ex=>{
+    ['reps','weight','dist','dur'].forEach(t=>localStorage.removeItem(`vq_rec_${ex}_${t}`));
+  });
+  location.reload();
+}
+
+/* ── Improved Demo Mode ── */
+function runDemo(){
+  const p=G.p;
+  // Show progress bar
+  const prog=_('demo-progress');
+  if(prog){ prog.style.display='block'; prog.style.width='0%'; }
+
+  toast('🎬','Demo Mode Starting!','Simulating 7 days of wellness...');
+  switchTab('world');
+
+  const steps=[
+    // Day 1: log habits, earn XP
+    ()=>{ gainXP(150,40,'💧 Hydration'); G.log.waterToday=2000; updateWaterMeter();
+          toast('📅','Day 1','Logged water + exercise!'); if(prog) prog.style.width='14%'; },
+    // Day 2: exercise + streak
+    ()=>{ gainXP(200,50,'💪 Gym Session'); G.p.streak=2; G.p.strikes+=2;
+          toast('📅','Day 2','Hit the gym! Streak: 2 days 🔥'); if(prog) prog.style.width='28%'; },
+    // Day 3: quest complete + badge
+    ()=>{ gainXP(250,65,'🗺️ Quest Completed'); G.p.questsDone+=3; G.p.streak=3;
+          toast('📅','Day 3','3 quests done! Streak bonus active! +25% XP'); if(prog) prog.style.width='42%'; },
+    // Day 4: level up likely
+    ()=>{ gainXP(300,75,'🌟 All Habits'); G.p.streak=4; G.p.habitsToday=5;
+          toast('📅','Day 4','All 6 habits logged! Diversity bonus!'); if(prog) prog.style.width='57%'; },
+    // Day 5: badge unlock
+    ()=>{ gainXP(280,70,'⚡ Strike Milestone'); G.p.strikes+=10; G.p.streak=5;
+          checkBadges(); toast('📅','Day 5','Strike milestone! Badge unlocked! 🎖️'); if(prog) prog.style.width='71%'; },
+    // Day 6: campus transformation
+    ()=>{ gainXP(320,80,'🌿 Campus Hero'); G.p.streak=6; G.p.coins+=100;
+          applyCampusVitality(G.p.xp);
+          toast('📅','Day 6','Campus vitality rising! Trees blooming 🌳'); if(prog) prog.style.width='85%'; },
+    // Day 7: final
+    ()=>{
+      gainXP(350,90,'👑 Week Complete'); G.p.streak=7; G.p.strikes+=3;
+      G.bots.forEach(b=>{ b.xp+=Math.floor(Math.random()*200)+100; b.lvl=calcLevel(b.xp); b.streak+=7; });
+      checkBadges(); renderLeaderboard();
+      if(prog){ prog.style.width='100%'; setTimeout(()=>{ prog.style.display='none'; },500); }
+      // Show impact card
+      const ic=_('impact-card'), ib=_('impact-body');
+      if(ic&&ib){
+        ic.style.display='block';
+        const vit=Math.min(100,Math.round(G.p.xp/100));
+        const proj={
+          sleep: G.p.streak>=3?'+30 min better sleep quality':'Log 3 days to unlock sleep benefits',
+          energy: G.p.level>=3?'Higher daytime energy levels':'Reach Level 3 to see energy gains',
+          focus: G.p.questsDone>=5?'+25% focus from mindfulness habits':'Complete 5 quests for focus boost',
+        };
+        ib.innerHTML=`
+          ⭐ Total XP: <b style="color:var(--gold)">${G.p.xp}</b><br>
+          🪙 WellCoins: <b style="color:var(--gold)">${G.p.coins}</b><br>
+          🔥 Streak: <b style="color:var(--orange)">${G.p.streak} days</b><br>
+          ⚡ Strike Points: <b style="color:var(--gold)">${G.p.strikes}</b><br>
+          🏅 Level: <b style="color:var(--xp)">${G.p.level} — ${lvlData(G.p.level).rank}</b><br>
+          🌿 Campus Vitality: <b style="color:var(--green)">${vit}%</b><br>
+          🎖️ Badges: <b style="color:var(--gold)">${_unlockedBadges.size} / 12</b><br>
+          ✅ Quests Done: <b style="color:var(--white)">${G.p.questsDone}</b>
+          <div style="margin-top:10px;border-top:2px solid var(--navy-rim);padding-top:8px;font-size:16px;color:var(--xp)">
+            📈 IF YOU KEEP GOING...<br>
+            😴 Sleep: ${proj.sleep}<br>
+            ⚡ Energy: ${proj.energy}<br>
+            🧠 Focus: ${proj.focus}
+          </div>
+        `;
+        switchTab('me');
+      }
+      toast('🏆','7-Day Demo Complete!',`Level ${G.p.level} · Vitality ${vit}% · Streak ${G.p.streak}d`);
+      save(); ui();
+    }
+  ];
+
+  steps.forEach((fn,i)=>setTimeout(()=>{ fn(); ui(); },i*900+300));
+}
+
+/* ── Header glow at high level ── */
+function updateHeaderGlow(){
+  const h=_('header');
+  if(h) h.classList.toggle('header-glow', G.p.level>=5);
+}
+
+/* ── Keyboard shortcut: L = log, W = world ── */
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+  if(e.key==='l'||e.key==='L') switchTab('log');
+  if(e.key==='w'||e.key==='W') switchTab('world');
+  if(e.key==='m'||e.key==='M') switchTab('me');
+  if(e.key==='s'||e.key==='S') switchTab('social');
+  if(e.key==='r'||e.key==='R') switchTab('rewards');
+});
+
+/* ── Apply campus vitality exposed globally ── */
+window.applyCampusVitality = applyCampusVitality;
+
+
+/* ══════════════════════════════════════════
+   CHUNK 3 — SOCIAL + REWARDS + ANALYTICS
+══════════════════════════════════════════ */
+
+/* ── Social sub-tab switching ── */
+const SOC_PANELS=['lb','exlb','badges','stories'];
+function socTab(id){
+  document.querySelectorAll('.soc-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.soc-panel').forEach(p=>p.classList.remove('active'));
+  const t=_('st-'+id), p=_('sp-'+id);
+  if(t) t.classList.add('active');
+  if(p) p.classList.add('active');
+  if(id==='lb')      renderLeaderboard();
+  if(id==='exlb')    renderExLb('pullup');
+  if(id==='badges')  renderBadges();
+  if(id==='stories') renderStories();
+}
+
+/* ══════════════════════════════════════════
+   LEADERBOARD
+══════════════════════════════════════════ */
+let _prevRanks={};
+function renderLeaderboard(){
+  const all=[
+    {name:G.p.name, xp:G.p.xp, lvl:G.p.level, streak:G.p.streak, isPlayer:true,
+     colors:['#FDBCB4','#E74C3C','#2C3E50']},
+    {name:'Amir HIT',      xp:G.bots[0].xp, lvl:G.bots[0].lvl, streak:G.bots[0].streak, isPlayer:false, colors:['#C8A96E','#27AE60','#1a252f']},
+    {name:'Siti Wellness', xp:G.bots[1].xp, lvl:G.bots[1].lvl, streak:G.bots[1].streak, isPlayer:false, colors:['#F0C080','#E91E8C','#4a235a']},
+    {name:'Haziq Grind',   xp:G.bots[2].xp, lvl:G.bots[2].lvl, streak:G.bots[2].streak, isPlayer:false, colors:['#FDBCB4','#F39C12','#1f3a5f']},
+    {name:'Farah Active',  xp:G.bots[3].xp, lvl:G.bots[3].lvl, streak:G.bots[3].streak, isPlayer:false, colors:['#C8A96E','#00BCD4','#263238']},
+  ].sort((a,b)=>b.xp-a.xp);
+
+  const wrap=_('lb-list'); if(!wrap) return;
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const rankColors=['var(--gold)','#C0C0C0','#CD7F32','var(--gray)','var(--gray)'];
+
+  wrap.innerHTML='';
+  all.forEach((p,i)=>{
+    const rank=i+1;
+    const prev=_prevRanks[p.name]||rank;
+    const change=prev-rank;
+    const changeIcon=change>0?'▲':change<0?'▼':'—';
+    const changeColor=change>0?'var(--green)':change<0?'var(--red)':'var(--gray)';
+    _prevRanks[p.name]=rank;
+
+    const maxXP=all[0].xp||1;
+    const pct=Math.round((p.xp/maxXP)*100);
+
+    const div=document.createElement('div');
+    div.className='lb-row'+(p.isPlayer?' player-row':'')+(rank<=3?` rank-${rank}`:'');
+    div.innerHTML=`
+      <div class="lb-rank" style="color:${rankColors[i]}">${medals[i]}</div>
+      <div class="lb-sprite">${miniSprite(p.colors)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${p.name}${p.isPlayer?' 👤':''}</div>
+        <div class="lb-sub">Lv ${p.lvl} · 🔥${p.streak}d streak</div>
+        <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="lb-xp">${p.xp}<br><span style="font-size:10px;color:var(--gray)">XP</span></div>
+      <div class="lb-change" style="color:${changeColor}">${changeIcon}</div>
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+function miniSprite([head,body,leg]){
+  return `<div style="display:flex;flex-direction:column;align-items:center">
+    <div style="width:12px;height:10px;background:${head};border:2px solid #000;position:relative">
+      <div style="position:absolute;width:2px;height:2px;background:#000;top:3px;left:2px"></div>
+      <div style="position:absolute;width:2px;height:2px;background:#000;top:3px;right:2px"></div>
+    </div>
+    <div style="width:16px;height:10px;background:${body};border:2px solid #000;margin-top:-1px"></div>
+    <div style="display:flex;gap:1px;margin-top:-1px">
+      <div style="width:5px;height:7px;background:${leg};border:2px solid #000"></div>
+      <div style="width:5px;height:7px;background:${leg};border:2px solid #000"></div>
+    </div>
+  </div>`;
+}
+
+/* ══════════════════════════════════════════
+   EXERCISE LEADERBOARDS
+══════════════════════════════════════════ */
+const EX_LB_CONFIG={
+  pullup: {label:'⬆️ PULL UP',    unit:'reps', type:'reps',   botBase:[42,28,15,35]},
+  pushup: {label:'💪 PUSH UP',    unit:'reps', type:'reps',   botBase:[80,55,30,65]},
+  bench:  {label:'🏋️ BENCH PRESS',unit:'kg',   type:'weight', botBase:[90,55,30,75]},
+  squat:  {label:'🦵 SQUAT',      unit:'kg',   type:'weight', botBase:[100,65,35,85]},
+  running:{label:'🏃 RUNNING',    unit:'km',   type:'dist',   botBase:[8,4,2,6]},
+  plank:  {label:'⏱️ PLANK',      unit:'sec',  type:'dur',    botBase:[120,60,30,90]},
+};
+// FIX: bot vals grow with their XP level dynamically
+function getBotExVal(exId, botIdx){
+  const cfg=EX_LB_CONFIG[exId];
+  const bot=G.bots[botIdx];
+  const base=cfg.botBase[botIdx];
+  const lvlBonus=Math.floor((bot.lvl-1)*base*0.05); // +5% per level
+  return +(base+lvlBonus).toFixed(1);
+}
+let _curExLb='pullup';
+function selectExLb(btn,exId){
+  document.querySelectorAll('.exlb-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  _curExLb=exId;
+  renderExLb(exId);
+}
+function renderExLb(exId){
+  const cfg=EX_LB_CONFIG[exId]; if(!cfg) return;
+  const titleEl=_('exlb-title');
+  if(titleEl) titleEl.textContent=`${cfg.label} — Best ${cfg.unit}`;
+
+  const botNames=['Amir HIT','Siti Wellness','Haziq Grind','Farah Active'];
+  const botColors=[['#C8A96E','#27AE60','#1a252f'],['#F0C080','#E91E8C','#4a235a'],['#FDBCB4','#F39C12','#1f3a5f'],['#C8A96E','#00BCD4','#263238']];
+
+  // Player personal best
+  const playerBest=parseFloat(localStorage.getItem(`vq_rec_${exId}_${cfg.type}`)||'0');
+
+  const entries=[
+    {name:G.p.name, val:playerBest, isPlayer:true, colors:['#FDBCB4','#E74C3C','#2C3E50']},
+    ...cfg.botBase.map((_,i)=>({name:botNames[i], val:getBotExVal(exId,i), isPlayer:false, colors:botColors[i]}))
+  ].sort((a,b)=>{
+    // FIX: sort 0/no-record to bottom
+    if(a.val===0 && b.val>0) return 1;
+    if(b.val===0 && a.val>0) return -1;
+    return b.val-a.val;
+  });
+
+  const wrap=_('exlb-list'); if(!wrap) return;
+  const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
+  wrap.innerHTML='';
+  entries.forEach((e,i)=>{
+    const maxVal=entries[0].val||1;
+    const pct=Math.round((e.val/maxVal)*100);
+    const div=document.createElement('div');
+    div.className='lb-row'+(e.isPlayer?' player-row':'');
+    div.innerHTML=`
+      <div class="lb-rank">${medals[i]||i+1}</div>
+      <div class="lb-sprite">${miniSprite(e.colors)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${e.name}${e.isPlayer?' 👤':''}</div>
+        <div class="lb-xp-bar"><div class="lb-xp-fill" style="width:${pct}%"></div></div>
+      </div>
+      <div class="lb-xp">${e.val>0?e.val:'—'}<br><span style="font-size:10px;color:var(--gray)">${cfg.unit}</span></div>
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+/* ══════════════════════════════════════════
+   BADGE SYSTEM (12 badges)
+══════════════════════════════════════════ */
+const BADGES=[
+  {id:'first_log',     ico:'🌟', name:'First Step',       desc:'Log your very first habit',           cond:()=>G.p.habitsToday>=1||G.p.xp>0},
+  {id:'hydration_hero',ico:'💧', name:'Hydration Hero',   desc:'Reach 2L water in one day',           cond:()=>G.log.waterToday>=2000},
+  {id:'iron_campus',   ico:'🏋️', name:'Iron Campus',      desc:'Log 5 exercise sessions',             cond:()=>G.log.exHistory&&G.log.exHistory.length>=5},
+  {id:'early_bird',    ico:'🌅', name:'Early Bird',        desc:'Log a habit before 8am',              cond:()=>new Date().getHours()<8&&G.p.habitsToday>0},
+  {id:'zen_master',    ico:'🧘', name:'Zen Zone Master',   desc:'Log 3 mindfulness sessions',          cond:()=>_catsToday.has('mindful')&&G.p.habitsToday>=3},
+  {id:'streak_guard',  ico:'🔥', name:'Streak Guardian',   desc:'Maintain a 3-day streak',             cond:()=>G.p.streak>=3},
+  {id:'well_rounded',  ico:'🌈', name:'Well-Rounded Hero', desc:'Log 4+ categories in one day',        cond:()=>_catsToday.size>=4},
+  {id:'level5',        ico:'⚔️', name:'Wellness Knight',   desc:'Reach Level 5',                       cond:()=>G.p.level>=5},
+  {id:'coin_master',   ico:'🪙', name:'Coin Master',       desc:'Earn 500 WellCoins',                  cond:()=>G.p.coins>=500},
+  {id:'quest_hero',    ico:'🗺️', name:'Quest Hero',        desc:'Complete 5 daily quests',             cond:()=>G.p.questsDone>=5},
+  {id:'strike_warrior',ico:'⚡', name:'Strike Warrior',    desc:'Reach 10 Strike Points',              cond:()=>G.p.strikes>=10},
+  {id:'campus_legend', ico:'👑', name:'Campus Legend',     desc:'Reach Level 10',                      cond:()=>G.p.level>=10},
+];
+
+const _unlockedBadges=new Set(load('vq_badges',[]));
+
+function checkBadges(){
+  BADGES.forEach(b=>{
+    if(_unlockedBadges.has(b.id)) return;
+    try{
+      if(b.cond()){
+        _unlockedBadges.add(b.id);
+        localStorage.setItem('vq_badges',JSON.stringify([..._unlockedBadges]));
+        G.p.badgesEarned=_unlockedBadges.size;
+        showBadgeUnlock(b);
+        gainXP(100,30,`Badge: ${b.name}`);
+      }
+    }catch(e){}
+  });
+}
+
+function showBadgeUnlock(b){
+  _('bu-icon').textContent=b.ico;
+  _('bu-name').textContent=b.name;
+  _('bu-desc').textContent=b.desc;
+  const ov=_('badge-overlay');
+  ov.style.display='flex';
+  spawnParticles();
+  setTimeout(()=>{ if(ov.style.display==='flex') ov.style.display='none'; },4000);
+}
+
+function renderBadges(){
+  const grid=_('badge-grid'); if(!grid) return;
+  grid.innerHTML='';
+  let earned=0;
+  BADGES.forEach(b=>{
+    const unlocked=_unlockedBadges.has(b.id);
+    if(unlocked) earned++;
+    const div=document.createElement('div');
+    div.className='badge-card'+(unlocked?' unlocked':' locked');
+    div.innerHTML=`
+      ${unlocked?`<div class="badge-done">✓</div>`:''}
+      <div class="badge-ico">${unlocked?b.ico:'🔒'}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.desc}</div>
+      ${unlocked?`<div style="font-size:13px;color:var(--green);margin-top:4px">UNLOCKED ✅</div>`:`<div style="font-size:13px;color:var(--gray);margin-top:4px">Locked</div>`}
+    `;
+    grid.appendChild(div);
+  });
+  const bc=_('badge-count'); if(bc) bc.textContent=earned;
+}
+
+/* ══════════════════════════════════════════
+   STUDENT STORIES
+══════════════════════════════════════════ */
+const STORIES=[
+  {
+    name:'Amir HIT', role:'Year 2 Engineering · Gym Bro',
+    colors:['#C8A96E','#27AE60','#1a252f'],
+    quote:'"I used to skip the gym because I felt guilty about it. VitalQuest made me realize even 10 push-ups counts. Now I have a 14-day streak!"',
+    stats:['Steps +40%','Sleep 7.5h avg','Level 6 🏆']
+  },
+  {
+    name:'Siti Wellness', role:'Year 3 Nursing · Wellness Advocate',
+    colors:['#F0C080','#E91E8C','#4a235a'],
+    quote:'"The calculator showed I was underhydrated. After logging water daily for a week, my focus during exams improved noticeably. The coins for café discounts sealed the deal!"',
+    stats:['Water 2.5L/day','3 Balanced meals','Badges: 8 🎖️']
+  },
+  {
+    name:'Haziq Grind', role:'Year 1 CS · Study Addict',
+    colors:['#FDBCB4','#F39C12','#1f3a5f'],
+    quote:'"I never thought logging study breaks would give me XP. Now I actually take breaks and feel less burned out before finals. The Pomodoro feature is my favourite!"',
+    stats:['Stress -30%','Study sessions: 42','Quest completions: 18']
+  },
+  {
+    name:'Farah Active', role:'Year 4 Sports Science · All-rounder',
+    colors:['#C8A96E','#00BCD4','#263238'],
+    quote:'"Competing with bots on the leaderboard keeps me motivated. I pushed my running PB to 8km just to stay #1 on the Running board. The campus world showing me at the track is so cool!"',
+    stats:['Running PB: 8km 🏃','Leaderboard #2','XP: 1,840']
+  },
+];
+
+
+/* ══════════════════════════════════════════
+   ANALYTICS (CSS bar chart)
+══════════════════════════════════════════ */
+function renderAnalytics(){
+  // Analytics grid
+  const grid=_('analytics-grid'); if(!grid) return;
+  const vit=Math.min(100,Math.round(G.p.xp/100));
+  grid.innerHTML=`
+    <div class="ana-card px-border"><div class="ana-val">${G.p.xp}</div><div class="ana-lbl">Total XP</div></div>
+    <div class="ana-card px-border"><div class="ana-val">${G.p.habitsToday}</div><div class="ana-lbl">Habits Today</div></div>
+    <div class="ana-card px-border"><div class="ana-val">${G.p.streak}d</div><div class="ana-lbl">Best Streak</div></div>
+    <div class="ana-card px-border"><div class="ana-val">${vit}%</div><div class="ana-lbl">Campus Vitality</div></div>
+  `;
+
+  // CSS weekly XP bar chart (simulated 7-day data)
+  const chart=_('css-chart'); if(!chart) return;
+  const labels=_('css-chart-labels'); if(!labels) return;
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  // Generate plausible weekly data based on current XP
+  const base=Math.max(50,Math.round(G.p.xp/7));
+  const weekData=days.map((_,i)=>{
+    if(i===new Date().getDay()-1) return G.log.dailyXP||base;
+    return Math.round(base*(0.6+Math.random()*0.8));
+  });
+  const maxVal=Math.max(...weekData,1);
+  const today=new Date().getDay()-1;
+
+  chart.innerHTML='';
+  labels.innerHTML='';
+  weekData.forEach((v,i)=>{
+    const h=Math.round((v/maxVal)*100);
+    const wrap=document.createElement('div');
+    wrap.className='chart-bar-wrap';
+    wrap.innerHTML=`<div class="chart-bar${i===today?' player-bar':''}" style="height:${h}%"></div>`;
+    chart.appendChild(wrap);
+    const lbl=document.createElement('div');
+    lbl.className='chart-lbl';
+    lbl.textContent=days[i];
+    labels.appendChild(lbl);
+  });
+}
+
+/* ══════════════════════════════════════════
+   REWARD SHOP
+══════════════════════════════════════════ */
+const SHOP_COUPONS=[
+  {id:'cafe10',  ico:'🍱', name:'Cafeteria 10% Off',   desc:'Valid at HIT Campus Café · 1 use', price:500,  lvlReq:1},
+  {id:'gym_pass',ico:'💪', name:'Gym Day Pass',         desc:'Free gym access for 1 day',        price:1000, lvlReq:3},
+  {id:'drink',   ico:'🧃', name:'Health Drink Voucher', desc:'AquaFresh 1 bottle free',          price:1500, lvlReq:1},
+  {id:'cafe_vip',ico:'☕', name:'VIP Café Deal',        desc:'Level 5+ exclusive — 25% off',     price:800,  lvlReq:5},
+  {id:'gym_week',ico:'🏟️', name:'Weekly Gym Pass',      desc:'7-day full gym access',            price:3000, lvlReq:7},
+  {id:'snack',   ico:'🍎', name:'Healthy Snack Pack',   desc:'Mixed nuts + fruit voucher',       price:300,  lvlReq:1},
+];
+const SHOP_COSMETICS=[
+  {id:'hoodie',  ico:'👕', name:'Campus Hoodie',   price:200, tag:'Sponsored'},
+  {id:'crown',   ico:'👑', name:'Gold Crown',      price:500, tag:'Level 5+'},
+  {id:'wings',   ico:'🪽', name:'Wellness Wings',  price:800, tag:'Level 7+'},
+  {id:'cape',    ico:'🦸', name:'Hero Cape',       price:1200,tag:'Level 8+'},
+];
+const SHOP_BOOSTS=[
+  {id:'xp2x',   ico:'⭐', name:'XP Double (1 day)', desc:'All XP ×2 for today',         price:400},
+  {id:'streak_shield',ico:'🛡️',name:'Streak Shield', desc:'Protect streak for 2 days',   price:200},
+  {id:'coin_rain',ico:'🌧️',name:'Coin Rain',         desc:'+100 bonus coins instantly',   price:300},
+];
+const _owned=new Set(load('vq_owned',[]));
+let _equippedCosmetic = localStorage.getItem('vq_equipped') || null;
+
+// Cosmetic colors/overlays per item
+const COSM_STYLES = {
+  hoodie: {bodyColor:'#4A90D9', label:'👕', desc:'Blue Campus Hoodie'},
+  crown:  {bodyColor:'#E74C3C', headExtra:'👑', label:'👑', desc:'Gold Crown'},
+  wings:  {bodyColor:'#9B59B6', label:'🪽', desc:'Wellness Wings'},
+  cape:   {bodyColor:'#E67E22', label:'🦸', desc:'Hero Cape'},
+};
+
+function renderShop(){
+  const sc=_('shop-coins'); if(sc) sc.textContent=G.p.coins;
+  const sl=_('shop-level'); if(sl) sl.textContent=G.p.level;
+  renderSouvenirs();
+
+  // Coupons
+  const couponWrap=_('shop-coupons'); if(!couponWrap) return;
+  couponWrap.innerHTML='';
+  SHOP_COUPONS.forEach(item=>{
+    const locked=G.p.level<item.lvlReq;
+    const owned=_owned.has(item.id);
+    const div=document.createElement('div');
+    div.className='shop-coupon'+(locked?' locked':'');
+    div.innerHTML=`
+      <div style="font-size:28px;margin-right:10px;flex-shrink:0">${item.ico}</div>
+      <div class="coupon-info">
+        <div class="coupon-name">${item.name}${locked?` <span style="color:var(--gray);font-size:5px">(Lv${item.lvlReq}+)</span>`:''}</div>
+        <div class="coupon-desc">${item.desc}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <div class="coupon-price">🪙${item.price}</div>
+        <button class="px-btn${owned?' red':''}" style="font-size:5px;padding:5px 8px"
+          data-id="${item.id}" data-price="${item.price}" data-owned="${owned}" data-locked="${locked}"
+          data-ico="${item.ico}" data-name="${item.name}" data-desc="${item.desc}"
+          onclick="shopCouponClick(this)">
+          ${locked?`LV${item.lvlReq}+`:owned?'USE':'BUY'}
+        </button>
+      </div>
+    `;
+    couponWrap.appendChild(div);
+  });
+
+  // Cosmetics
+  const cosmWrap=_('shop-cosmetics'); if(!cosmWrap) return;
+  cosmWrap.innerHTML='';
+  SHOP_COSMETICS.forEach(item=>{
+    const owned=_owned.has(item.id);
+    const div=document.createElement('div');
+    div.className='shop-cosm px-border';
+    div.innerHTML=`
+      <div class="cosm-ico">${owned?item.ico:'🔒'}${_equippedCosmetic===item.id?' <span style="font-size:10px;color:var(--green)">ON</span>':''}</div>
+      <div class="cosm-name">${item.name}</div>
+      <div class="cosm-price">🪙${item.price}</div>
+      <div class="cosm-tag">${item.tag}</div>
+      <button class="px-btn${owned?(_equippedCosmetic===item.id?' red':' green'):''}" style="margin-top:6px;font-size:5px;padding:5px;width:100%"
+        data-id="${item.id}" data-price="${item.price}" data-owned="${owned}"
+        data-ico="${item.ico}" data-name="${item.name}" data-desc="Cosmetic equipped!"
+        onclick="shopCosmeticClick(this)">
+        ${owned?(_equippedCosmetic===item.id?'UNEQUIP':'EQUIP'):'BUY'}
+      </button>
+    `;
+    cosmWrap.appendChild(div);
+  });
+
+  // Boosts
+  const boostWrap=_('shop-boosts'); if(!boostWrap) return;
+  boostWrap.innerHTML='';
+  SHOP_BOOSTS.forEach(item=>{
+    const div=document.createElement('div');
+    div.className='shop-coupon';
+    div.innerHTML=`
+      <div style="font-size:28px;margin-right:10px;flex-shrink:0">${item.ico}</div>
+      <div class="coupon-info">
+        <div class="coupon-name">${item.name}</div>
+        <div class="coupon-desc">${item.desc}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <div class="coupon-price">🪙${item.price}</div>
+        <button class="px-btn" style="font-size:5px;padding:5px 8px"
+          data-id="${item.id}" data-price="${item.price}"
+          data-ico="${item.ico}" data-name="${item.name}"
+          onclick="shopBoostClick(this)">BUY</button>
+      </div>
+    `;
+    boostWrap.appendChild(div);
+  });
+}
+
+// FIX: data-attribute shop handlers — no quote escaping issues
+function shopCouponClick(btn){
+  const {id,price,owned,locked,ico,name,desc}=btn.dataset;
+  if(locked==='true'){ toast('⚠️',`Level ${btn.dataset.lvlReq} Required!`,'Keep leveling up!'); return; }
+  if(owned==='true')  { redeemItem(id,ico,name,desc); return; }
+  buyItem(id,+price,ico,name,desc);
+}
+function shopCosmeticClick(btn){
+  const {id,price,owned,ico,name,desc}=btn.dataset;
+  if(owned==='true'){ equipCosmetic(id); return; }
+  buyItem(id,+price,ico,name,desc);
+}
+
+function equipCosmetic(id){
+  _equippedCosmetic = _equippedCosmetic===id ? null : id; // toggle
+  localStorage.setItem('vq_equipped', _equippedCosmetic||'');
+  applyAvatarCosmetic();
+  renderShop();
+  const cs=COSM_STYLES[id];
+  if(_equippedCosmetic===id)
+    toast('👕','Cosmetic Equipped!',`${cs?.desc||id} — visible on your avatar!`);
+  else
+    toast('👕','Cosmetic Removed','Back to default look');
+}
+
+function applyAvatarCosmetic(){
+  const cs = _equippedCosmetic ? COSM_STYLES[_equippedCosmetic] : null;
+  const color = cs ? cs.bodyColor : '#E74C3C'; // default red
+  // Update all player body elements
+  document.querySelectorAll('#av-player .av-body, #player-sprite .av-body, .whud-mini-sprite .av-body').forEach(el=>{
+    el.style.background = color;
+  });
+  // Hero screen sprite
+  const heroBody = document.querySelector('#screen-me .av-body');
+  if(heroBody) heroBody.style.background = color;
+  // Update cosmetic badge on avatar
+  const badge = _('player-cosm-badge');
+  if(badge){
+    badge.textContent = cs ? cs.label : '';
+    badge.style.display = cs ? 'block' : 'none';
+  }
+}
+function shopBoostClick(btn){
+  const {id,price,ico,name}=btn.dataset;
+  buyBoost(id,+price,ico,name);
+}
+
+function buyItem(id,price,ico,name,desc){
+  if(G.p.coins<price){ toast('⚠️','Not enough coins!',`Need 🪙${price} — keep logging!`); return; }
+  G.p.coins-=price;
+  _owned.add(id);
+  localStorage.setItem('vq_owned',JSON.stringify([..._owned]));
+  save(); ui(); renderShop();
+  // Auto-equip if cosmetic
+  if(COSM_STYLES[id]) equipCosmetic(id);
+  else redeemItem(id,ico,name,desc);
+}
+
+function redeemItem(id,ico,name,desc){
+  _('redeem-ico').textContent=ico;
+  _('redeem-item').textContent=name;
+  _('redeem-desc').textContent=desc;
+  _('redeemed-overlay').style.display='flex';
+  toast('🎁',`${name} redeemed!`,'Show screen at the counter!');
+}
+
+function buyBoost(id,price,ico,name){
+  if(G.p.coins<price){ toast('⚠️','Not enough coins!',`Need 🪙${price}`); return; }
+  G.p.coins-=price; save(); ui(); renderShop();
+  if(id==='xp2x')          { G.profile=(G.profile||{}); G.profile.mult=(G.profile.mult||1)*2; toast('⭐','XP Double Active!','All XP ×2 today!'); }
+  if(id==='streak_shield')  { localStorage.setItem('vq_forgive',2); toast('🛡️','Streak Shield!','2-day protection active!'); }
+  if(id==='coin_rain')      { G.p.coins+=100; save(); ui(); toast('🌧️','Coin Rain!','+100 🪙 bonus!'); }
+  renderShop();
+}
+
+function watchAd(){
+  toast('📺','Watching ad...','');
+  setTimeout(()=>{
+    G.p.coins+=50; save(); ui(); renderShop();
+    toast('✅','Ad complete!','+50 🪙 earned!');
+  },1500);
+}
+
+/* ══════════════════════════════════════════
+   HOOK: run badge check after every XP gain
+══════════════════════════════════════════ */
+const _origGainXP=window.gainXP;
+window.gainXP=function(xp,coins,source){
+  _origGainXP(xp,coins,source);
+  setTimeout(checkBadges,200);
+  // Refresh leaderboard if open
+  const lbEl=_('lb-list');
+  if(lbEl&&lbEl.children.length) renderLeaderboard();
+  // Refresh shop coin display
+  const sc=_('shop-coins'); if(sc) sc.textContent=G.p.coins;
+};
+
+/* ══════════════════════════════════════════
+   HOOK: switchTab — render social/rewards when opened
+══════════════════════════════════════════ */
+const _origSwitchTab=window.switchTab;
+window.switchTab=function(id){
+  _origSwitchTab(id);
+  if(id==='social')  {
+    // FIX: ensure RANKS sub-tab is active on first open
+    document.querySelectorAll('.soc-tab').forEach(t=>t.classList.remove('active'));
+    const st=_('st-lb'); if(st) st.classList.add('active');
+    document.querySelectorAll('.soc-panel').forEach(p=>p.classList.remove('active'));
+    const sp=_('sp-lb'); if(sp) sp.classList.add('active');
+    renderLeaderboard();
+  }
+  if(id==='rewards') { renderShop(); }
+};
+
+
+/* ══════════════════════════════════════════
+   CHUNK 5 — REMAINING FIXES
+══════════════════════════════════════════ */
+
+/* Billboard click handler */
+const BB_ADS = {
+  cafe: {ico:'🍃', title:'HIT Campus Café', msg:'Show this to get 10% off your next meal!', coins:20},
+  gym:  {ico:'💪', title:'SportZone Gym',   msg:'Student discount — mention VitalQuest at counter!', coins:30},
+  aqua: {ico:'💧', title:'AquaFresh',       msg:'Watch ad for +50 coins bonus!', coins:50},
+};
+function bbClick(type){
+  const ad=BB_ADS[type]; if(!ad) return;
+  G.p.coins+=ad.coins; save(); ui(); renderShop();
+  toast(ad.ico, ad.title, `${ad.msg} · +${ad.coins} 🪙`);
+}
+
+/* ── BUY COINS with real money simulation (RM) ── */
+function buyCoins(amount, packName, price){
+  const existing=_('buy-confirm-modal'); if(existing) existing.remove();
+  const modal=document.createElement('div');
+  modal.id='buy-confirm-modal';
+  modal.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:750;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML=`
+    <div style="background:var(--navy-mid);border:6px solid var(--gold);box-shadow:8px 8px 0 #000;padding:28px 36px;text-align:center;max-width:320px;width:90%;animation:luPop .3s ease both">
+      <div style="font-size:40px;margin-bottom:8px">💰</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);margin-bottom:8px">PURCHASE COINS</div>
+      <div style="font-size:20px;color:var(--white);margin-bottom:6px">${packName}</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:18px;color:var(--green);margin-bottom:4px">🪙 ${amount} WellCoins</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:14px;color:var(--gold);margin-bottom:6px">${price}</div>
+      <div style="font-size:15px;color:var(--gray);margin-bottom:16px">Payment simulated for demo.<br>Tap CONFIRM to receive coins instantly.</div>
+      <div style="display:flex;gap:8px">
+        <button class="px-btn" style="flex:1;background:var(--gray);border-color:#444;color:#fff;font-size:6px" onclick="document.getElementById('buy-confirm-modal').remove()">✕ CANCEL</button>
+        <button class="px-btn green" style="flex:1;font-size:6px" onclick="confirmBuyCoins(${amount},'${packName}','${price}')">✓ PAY ${price}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+}
+
+function confirmBuyCoins(amount, packName, price){
+  document.getElementById('buy-confirm-modal')?.remove();
+  G.p.coins+=amount; save(); ui(); renderShop();
+  const txId='VQ'+Math.floor(Math.random()*999999).toString().padStart(6,'0');
+  const receipt=document.createElement('div');
+  receipt.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:750;display:flex;align-items:center;justify-content:center';
+  receipt.innerHTML=`
+    <div style="background:var(--navy-mid);border:6px solid var(--green);box-shadow:0 0 30px rgba(57,255,20,.4),8px 8px 0 #000;padding:28px 36px;text-align:center;max-width:300px;width:90%;animation:luPop .3s ease both">
+      <div style="font-size:40px;margin-bottom:8px">🧾</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--green);margin-bottom:10px">PAYMENT SUCCESS!</div>
+      <div style="background:var(--navy-lt);border:2px solid var(--navy-rim);padding:12px;text-align:left;font-size:16px;margin-bottom:14px;line-height:2">
+        <div>📦 ${packName}</div>
+        <div>🪙 +${amount} WellCoins</div>
+        <div>💳 ${price} paid</div>
+        <div>🕐 ${new Date().toLocaleTimeString()}</div>
+        <div style="color:var(--green)">✅ TX: ${txId}</div>
+      </div>
+      <div style="font-size:15px;color:var(--gold);margin-bottom:14px">Balance: 🪙 ${G.p.coins}</div>
+      <button class="px-btn green" style="width:100%" onclick="this.closest('div[style]').remove()">✓ DONE</button>
+    </div>
+  `;
+  document.body.appendChild(receipt);
+  toast('💰',`${packName} Purchased!`,`+${amount} 🪙 added to your balance!`);
+}
+
+/* ── SOUVENIRS — Real-Life Rewards ── */
+const SHOP_SOUVENIRS=[
+  {id:'tshirt',    ico:'👕', name:'VitalQuest T-Shirt',   desc:'Official wellness merch · S/M/L/XL · HIT branded', price:2000, collect:'HIT Student Centre, Block A'},
+  {id:'bottle',    ico:'🍶', name:'HIT Wellness Bottle',  desc:'500ml BPA-free · VitalQuest logo print',           price:1500, collect:'HIT Student Centre, Block A'},
+  {id:'cap',       ico:'🧢', name:'Campus Wellness Cap',  desc:'Adjustable snapback · HIT + VitalQuest logo',      price:1200, collect:'HIT Student Centre, Block A'},
+  {id:'starterkit',ico:'🎁', name:'Wellness Starter Kit', desc:'Bottle + Towel + Sticker pack · Limited edition',  price:3000, collect:'HIT Student Centre, Block A · Limited!'},
+  {id:'lanyard',   ico:'🪪', name:'VitalQuest Lanyard',   desc:'ID lanyard · Wellness tips printed · Daily reminder',price:800, collect:'HIT Student Centre, Block A'},
+];
+
+function renderSouvenirs(){
+  const wrap=_('shop-souvenirs'); if(!wrap) return;
+  wrap.innerHTML='';
+  SHOP_SOUVENIRS.forEach(item=>{
+    const owned=_owned.has(item.id);
+    const canAfford=G.p.coins>=item.price;
+    const div=document.createElement('div');
+    div.className='shop-coupon';
+    div.style.borderColor=owned?'var(--green)':canAfford?'var(--orange)':'var(--navy-rim)';
+    div.innerHTML=`
+      <div style="font-size:32px;margin-right:10px;flex-shrink:0">${item.ico}</div>
+      <div class="coupon-info">
+        <div class="coupon-name" style="color:var(--orange)">${item.name}</div>
+        <div class="coupon-desc">${item.desc}</div>
+        <div style="font-size:13px;color:var(--teal);margin-top:3px">📍 ${item.collect}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0">
+        <div class="coupon-price" style="color:var(--orange)">🪙${item.price}</div>
+        <button class="px-btn" style="font-size:5px;padding:5px 8px;
+          background:${owned?'var(--green)':canAfford?'var(--orange)':'var(--gray)'};
+          border-color:${owned?'var(--green-drk)':canAfford?'#CC6600':'#444'}"
+          data-id="${item.id}" data-price="${item.price}"
+          data-ico="${item.ico}" data-name="${item.name}" data-collect="${item.collect}"
+          data-owned="${owned}" data-afford="${canAfford}"
+          onclick="shopSouvenirClick(this)">
+          ${owned?'📍 COLLECT':canAfford?'🛒 CLAIM':'🔒 '+item.price+'🪙'}
+        </button>
+      </div>
+    `;
+    wrap.appendChild(div);
+  });
+}
+
+function shopSouvenirClick(btn){
+  const {id,price,ico,name,collect,owned,afford}=btn.dataset;
+  if(owned==='true'){ showSouvenirClaim(ico,name,collect); return; }
+  if(afford==='false'){ toast('⚠️','Not enough coins!',`Need 🪙${parseInt(price)-G.p.coins} more — keep logging!`); return; }
+  if(G.p.coins<parseInt(price)){ toast('⚠️','Not enough coins!',''); return; }
+  G.p.coins-=parseInt(price);
+  _owned.add(id);
+  localStorage.setItem('vq_owned',JSON.stringify([..._owned]));
+  save(); ui(); renderShop();
+  showSouvenirClaim(ico,name,collect);
+}
+
+function showSouvenirClaim(ico,name,collect){
+  const code='VQ-'+Math.random().toString(36).substr(2,8).toUpperCase();
+  const overlay=document.createElement('div');
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:750;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML=`
+    <div style="background:var(--navy-mid);border:6px solid var(--orange);box-shadow:0 0 40px rgba(255,140,0,.5),8px 8px 0 #000;padding:32px 36px;text-align:center;max-width:320px;width:90%;animation:luPop .4s ease both">
+      <div style="font-size:52px;margin-bottom:8px">${ico}</div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:9px;color:var(--orange)">SOUVENIR CLAIMED!</div>
+      <div style="font-size:20px;color:var(--white);margin:10px 0">${name}</div>
+      <div style="background:var(--navy-lt);border:3px solid var(--orange);padding:12px;margin-bottom:12px">
+        <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:var(--orange);margin-bottom:6px">📍 COLLECT HERE</div>
+        <div style="font-size:15px;color:var(--white);line-height:1.6">${collect}</div>
+        <div style="margin-top:8px;font-size:14px;color:var(--gray)">Show this screen + Student ID</div>
+      </div>
+      <div style="font-family:'Press Start 2P',monospace;font-size:8px;color:var(--gold);margin-bottom:14px">${code}</div>
+      <div style="font-size:14px;color:var(--gray);margin-bottom:14px">This souvenir promotes your wellness journey and supports a healthy campus culture! 💪</div>
+      <button class="px-btn" style="width:100%;background:var(--orange);border-color:#CC6600" onclick="this.closest('div[style]').remove()">✓ GOT IT!</button>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  spawnParticles();
+}
+
+/* Submit story to localStorage */
+function submitStory(){
+  const name=_('story-name')?.value.trim();
+  const text=_('story-text')?.value.trim();
+  if(!name||name.length<2){ toast('⚠️','Enter your name!',''); return; }
+  if(!text||text.length<20){ toast('⚠️','Write more!','At least 20 characters'); return; }
+  const saved=load('vq_user_stories',[]);
+  const newStory={
+    name, role:'HIT Student',
+    colors:['#FDBCB4','#E74C3C','#2C3E50'],
+    quote:`"${text}"`,
+    stats:[`Lv ${G.p.level} 🏅`,`Streak ${G.p.streak}d 🔥`,`${G.p.xp} XP ⭐`],
+    isUser:true,
+  };
+  saved.unshift(newStory);
+  if(saved.length>10) saved.pop();
+  localStorage.setItem('vq_user_stories',JSON.stringify(saved));
+  const ni=_('story-name'), ti=_('story-text');
+  if(ni) ni.value=''; if(ti) ti.value='';
+  earnXP(30,8,'✍️ Shared Story','any');
+  toast('📤','Story Shared!','+30 XP for inspiring others!');
+  renderStories();
+}
+
+/* Updated renderStories — merges hardcoded + user stories */
+function renderStories(){
+  const wrap=_('stories-list'); if(!wrap) return;
+  wrap.innerHTML='';
+  const userStories=load('vq_user_stories',[]);
+  const allStories=[...userStories,...STORIES];
+  allStories.forEach(s=>{
+    const div=document.createElement('div');
+    div.className='story-card';
+    div.style.borderColor=s.isUser?'var(--green)':'var(--navy-rim)';
+    div.innerHTML=`
+      <div class="story-head">
+        <div class="story-av">${miniSprite(s.colors)}</div>
+        <div>
+          <div class="story-name">${s.name}${s.isUser?' <span style="font-size:11px;color:var(--green)">✓ YOU</span>':''}</div>
+          <div class="story-role">${s.role}</div>
+        </div>
+      </div>
+      <div class="story-quote">${s.quote}</div>
+      <div class="story-stats">${s.stats.map(st=>`<div class="story-stat">${st}</div>`).join('')}</div>
+    `;
+    wrap.appendChild(div);
+  });
+  renderAnalytics();
+}
+
+/* Updated renderExHistory — shows personal best */
+function renderExHistory(){
+  const wrap=_('ex-hist-list'); if(!wrap) return;
+  if(!G.log.exHistory||!G.log.exHistory.length){
+    wrap.innerHTML='<div style="color:var(--gray);font-size:15px">No records yet — start logging!</div>';
+  } else {
+    wrap.innerHTML=G.log.exHistory.slice(0,3).map(h=>
+      `<div class="ex-hist-row"><span>${h.ex}</span><span>${h.detail}</span><span style="font-size:13px;color:var(--gray)">${h.time}</span></div>`
+    ).join('');
+  }
+  // Show PB for selected exercise
+  const exId=G.log.selectedEx;
+  const cfg=G.log.exConfig?.[exId];
+  const pbEl=_('ex-pb-display'); if(!pbEl||!cfg) return;
+  const types={reps:'reps',both:'reps/kg',dist:'km',dur:'min'};
+  const pbKey=`vq_rec_${exId}_${cfg.metric==='both'?'reps':cfg.metric}`;
+  const pbVal=localStorage.getItem(pbKey);
+  pbEl.textContent=pbVal&&pbVal>0?`🏆 PB: ${pbVal} ${types[cfg.metric]||''}` : '';
+}
+
+/* ══════════════════════════════════════════
+   INIT
+══════════════════════════════════════════ */
+function init(){
+  buildStars();
+  updateSky();
+  ui();
+  addStrike('open');
+  checkDailyStreak();
+  initQuests();
+  updateLogUI();
+  checkEarlyBird();
+  checkBadges();
+  renderLeaderboard();
+  renderShop();
+  updateHeaderGlow();
+
+  // Pre-select first exercise
+  setTimeout(()=>{
+    const defBtn=_('ex-pullup');
+    if(defBtn) selectEx(defBtn,'pullup');
+    // Restore meal display
+    const display=_('meal-log');
+    if(display&&_mealLog.length) display.textContent=_mealLog.map(m=>({balanced:'🍱',snack:'🍎',protein:'🥩',veggie:'🥦'})[m]).join(' ');
+  },150);
+
+  // Show onboarding for first-time users
+  if(!localStorage.getItem('vq_onboarded')){
+    setTimeout(()=>showOnboard(), 1200);
+  } else {
+    setTimeout(()=>{
+      toast('🎮','Welcome back to VitalQuest HIT!','Click a zone to log your habits!');
+    },700);
+  }
+
+  // Tick sky every minute
+  setInterval(updateSky, 60000);
+  // Bot AI + leaderboard every 9 seconds
+  setInterval(()=>{ botTick(); renderLeaderboard(); }, 9000);
+  // Early bird check every minute
+  setInterval(checkEarlyBird, 60000);
+  // Badge check every 30 seconds
+  setInterval(()=>{ checkBadges(); updateHeaderGlow(); }, 30000);
+
+  // Restore equipped cosmetic on load
+  applyAvatarCosmetic();
+}
+
+init();
+</script>
+</body>
+</html>

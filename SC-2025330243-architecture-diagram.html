@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VitalQuest HIT — System Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@400;600;700&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#0D1B2A;
+  font-family:'Inter',sans-serif;
+  color:#E8F0FF;
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:24px;
+}
+h1{
+  font-family:'Press Start 2P',monospace;
+  font-size:13px;color:#FFD700;
+  text-shadow:2px 2px 0 #000;
+  margin-bottom:6px;text-align:center;
+}
+.subtitle{font-size:13px;color:#6A7FA0;margin-bottom:28px;text-align:center;}
+
+/* MAIN GRID */
+.arch-grid{
+  display:grid;
+  grid-template-columns:180px 1fr 180px;
+  grid-template-rows:auto auto auto;
+  gap:20px;
+  max-width:920px;width:100%;
+  align-items:start;
+}
+
+/* BOXES */
+.box{
+  border:2px solid;
+  padding:12px 14px;
+  position:relative;
+}
+.box-title{
+  font-family:'Press Start 2P',monospace;
+  font-size:7px;margin-bottom:8px;
+}
+.box-item{
+  display:flex;align-items:center;gap:6px;
+  font-size:12px;padding:3px 0;
+  border-bottom:1px solid rgba(255,255,255,.07);
+}
+.box-item:last-child{border-bottom:none}
+.box-item .ico{font-size:14px;width:20px;text-align:center;flex-shrink:0}
+
+/* COLORS */
+.gold  {border-color:#FFD700;box-shadow:0 0 12px rgba(255,215,0,.2)}
+.blue  {border-color:#00BFFF;box-shadow:0 0 12px rgba(0,191,255,.2)}
+.green {border-color:#39FF14;box-shadow:0 0 12px rgba(57,255,20,.2)}
+.purple{border-color:#9B59B6;box-shadow:0 0 12px rgba(155,89,182,.2)}
+.orange{border-color:#FF8C00;box-shadow:0 0 12px rgba(255,140,0,.2)}
+.red   {border-color:#FF4455;box-shadow:0 0 12px rgba(255,68,85,.2)}
+.teal  {border-color:#00CED1;box-shadow:0 0 12px rgba(0,206,209,.2)}
+
+.gold   .box-title{color:#FFD700}
+.blue   .box-title{color:#00BFFF}
+.green  .box-title{color:#39FF14}
+.purple .box-title{color:#9B59B6}
+.orange .box-title{color:#FF8C00}
+.red    .box-title{color:#FF4455}
+.teal   .box-title{color:#00CED1}
+
+/* CENTER ENGINE */
+.center-box{
+  grid-column:2;grid-row:1/4;
+  background:linear-gradient(180deg,#1A2744 0%,#0D1B2A 100%);
+  border:3px solid #FFD700;
+  box-shadow:0 0 30px rgba(255,215,0,.3),inset 0 0 40px rgba(255,215,0,.04);
+  padding:20px;
+  display:flex;flex-direction:column;gap:14px;
+}
+.engine-title{
+  font-family:'Press Start 2P',monospace;
+  font-size:10px;color:#FFD700;
+  text-align:center;
+  text-shadow:0 0 16px rgba(255,215,0,.6);
+  margin-bottom:4px;
+}
+.engine-row{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.engine-card{
+  background:rgba(255,255,255,.04);
+  border:2px solid rgba(255,255,255,.1);
+  padding:10px;
+  text-align:center;
+  transition:border-color .2s;
+}
+.engine-card:hover{border-color:rgba(255,215,0,.5)}
+.ec-ico{font-size:22px;margin-bottom:4px}
+.ec-lbl{font-family:'Press Start 2P',monospace;font-size:6px;color:#FFD700;margin-bottom:3px}
+.ec-desc{font-size:11px;color:#6A7FA0;line-height:1.4}
+
+/* ARROW LAYER */
+.arrow-label{
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  font-size:11px;color:#6A7FA0;font-weight:600;
+  padding:4px 0;
+}
+.arrow-label::before,.arrow-label::after{
+  content:'';flex:1;height:1px;background:rgba(255,215,0,.3);
+}
+
+/* STORAGE ROW */
+.storage-row{
+  grid-column:1/4;
+  display:grid;grid-template-columns:1fr 1fr 1fr;
+  gap:16px;
+}
+
+/* FLOW ARROWS between left/right and center */
+.flow-left{
+  grid-column:1;
+  display:flex;flex-direction:column;gap:16px;
+}
+.flow-right{
+  grid-column:3;
+  display:flex;flex-direction:column;gap:16px;
+}
+
+/* CONNECTOR ARROWS */
+.connector{
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#FFD700;
+  opacity:.6;
+  margin:4px 0;
+}
+
+/* LEGEND */
+.legend{
+  display:flex;gap:20px;flex-wrap:wrap;justify-content:center;
+  margin-top:20px;
+}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#6A7FA0}
+.legend-dot{width:10px;height:10px;border:2px solid}
+
+/* User flow at top */
+.user-row{
+  grid-column:1/4;
+  display:flex;justify-content:center;margin-bottom:4px;
+}
+.user-box{
+  background:rgba(255,215,0,.08);
+  border:2px solid #FFD700;
+  padding:10px 32px;
+  display:flex;align-items:center;gap:12px;
+  font-family:'Press Start 2P',monospace;
+  font-size:8px;color:#FFD700;
+}
+</style>
+</head>
+<body>
+
+<h1>⚔️ VITALQUEST HIT</h1>
+<div class="subtitle">System Architecture — Gamified Wellness Platform</div>
+
+<div class="arch-grid">
+
+  <!-- USER ROW -->
+  <div class="user-row">
+    <div class="user-box">
+      <span style="font-size:24px">🧑‍🎓</span>
+      HIT STUDENT (USER)
+      <span style="font-size:10px;color:#6A7FA0;font-family:sans-serif;font-weight:400">Interacts via browser / mobile</span>
+    </div>
+  </div>
+
+  <!-- LEFT COLUMN — Input Systems -->
+  <div class="flow-left">
+
+    <div class="box blue">
+      <div class="box-title">📥 HABIT INPUT</div>
+      <div class="box-item"><span class="ico">💧</span>Hydration Logger</div>
+      <div class="box-item"><span class="ico">🏃</span>Exercise Tracker</div>
+      <div class="box-item"><span class="ico">😴</span>Sleep Logger</div>
+      <div class="box-item"><span class="ico">🥗</span>Nutrition Log</div>
+      <div class="box-item"><span class="ico">🧘</span>Mindfulness</div>
+      <div class="box-item"><span class="ico">📚</span>Study Break</div>
+    </div>
+
+    <div class="connector">→</div>
+
+    <div class="box teal">
+      <div class="box-title">🧮 CALCULATOR</div>
+      <div class="box-item"><span class="ico">📊</span>BMI Analysis</div>
+      <div class="box-item"><span class="ico">🫁</span>VO2 Max Est.</div>
+      <div class="box-item"><span class="ico">🔥</span>Caloric Needs</div>
+      <div class="box-item"><span class="ico">⚖️</span>Fitness Level</div>
+      <div class="box-item"><span class="ico">🎯</span>Daily Targets</div>
+    </div>
+
+  </div>
+
+  <!-- CENTER ENGINE -->
+  <div class="center-box">
+    <div class="engine-title">⚙️ GAMIFICATION ENGINE</div>
+
+    <div class="engine-row">
+      <div class="engine-card">
+        <div class="ec-ico">⭐</div>
+        <div class="ec-lbl">XP SYSTEM</div>
+        <div class="ec-desc">Base XP × Fitness Mult × Streak Mult × Combo Mult</div>
+      </div>
+      <div class="engine-card">
+        <div class="ec-ico">📊</div>
+        <div class="ec-lbl">LEVEL ENGINE</div>
+        <div class="ec-desc">10 levels · Auto level-up · Rank titles · Unlock gates</div>
+      </div>
+    </div>
+
+    <div class="engine-row">
+      <div class="engine-card">
+        <div class="ec-ico">🔥</div>
+        <div class="ec-lbl">STREAK ENGINE</div>
+        <div class="ec-desc">Daily streak · +25/40/60% XP · Forgiveness mechanic</div>
+      </div>
+      <div class="engine-card">
+        <div class="ec-ico">⚡</div>
+        <div class="ec-lbl">STRIKE POINTS</div>
+        <div class="ec-desc">Open app · Log activity · Milestones → bonus XP</div>
+      </div>
+    </div>
+
+    <div class="engine-row">
+      <div class="engine-card">
+        <div class="ec-ico">🗺️</div>
+        <div class="ec-lbl">QUEST ENGINE</div>
+        <div class="ec-desc">3 daily + 1 weekly · Category-tracked · Completion bursts</div>
+      </div>
+      <div class="engine-card">
+        <div class="ec-ico">🎖️</div>
+        <div class="ec-lbl">BADGE ENGINE</div>
+        <div class="ec-desc">12 achievements · Auto-check every log · Unlock overlay</div>
+      </div>
+    </div>
+
+    <div style="border-top:1px solid rgba(255,255,255,.1);padding-top:10px">
+      <div style="font-family:'Press Start 2P',monospace;font-size:6px;color:#6A7FA0;text-align:center;margin-bottom:8px">OUTPUT FLOWS</div>
+      <div class="engine-row">
+        <div class="engine-card">
+          <div class="ec-ico">🪙</div>
+          <div class="ec-lbl">WELLCOINS</div>
+          <div class="ec-desc">Earned per habit → Redeemable at campus partners</div>
+        </div>
+        <div class="engine-card">
+          <div class="ec-ico">🌍</div>
+          <div class="ec-lbl">WORLD STATE</div>
+          <div class="ec-desc">Campus vitality % · Avatar position · Bot AI roaming</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT COLUMN — Output Systems -->
+  <div class="flow-right">
+
+    <div class="box green">
+      <div class="box-title">🏆 SOCIAL</div>
+      <div class="box-item"><span class="ico">📋</span>Overall Leaderboard</div>
+      <div class="box-item"><span class="ico">💪</span>Exercise Rankings</div>
+      <div class="box-item"><span class="ico">🤖</span>4 Bot Students</div>
+      <div class="box-item"><span class="ico">👥</span>Student Stories</div>
+      <div class="box-item"><span class="ico">📊</span>Analytics Charts</div>
+    </div>
+
+    <div class="connector">←</div>
+
+    <div class="box purple">
+      <div class="box-title">🛒 REWARDS</div>
+      <div class="box-item"><span class="ico">🍱</span>Campus Coupons</div>
+      <div class="box-item"><span class="ico">👕</span>Avatar Cosmetics</div>
+      <div class="box-item"><span class="ico">⚡</span>XP/Streak Boosts</div>
+      <div class="box-item"><span class="ico">📺</span>Rewarded Ads</div>
+      <div class="box-item"><span class="ico">✅</span>Redeem Screen</div>
+    </div>
+
+  </div>
+
+  <!-- STORAGE ROW -->
+  <div class="storage-row">
+
+    <div class="box orange">
+      <div class="box-title">💾 CLIENT STORAGE</div>
+      <div class="box-item"><span class="ico">🗄️</span>localStorage (persist)</div>
+      <div class="box-item"><span class="ico">⏱️</span>sessionStorage (temp)</div>
+      <div class="box-item"><span class="ico">📱</span>22 state keys</div>
+    </div>
+
+    <div class="box red">
+      <div class="box-title">🌍 WORLD MAP ENGINE</div>
+      <div class="box-item"><span class="ico">🕐</span>Real-time clock → Sky</div>
+      <div class="box-item"><span class="ico">🤖</span>Bot AI (9s tick)</div>
+      <div class="box-item"><span class="ico">🌿</span>Campus transformation</div>
+      <div class="box-item"><span class="ico">🪧</span>Interactive billboards</div>
+    </div>
+
+    <div class="box gold">
+      <div class="box-title">⚙️ TECH STACK</div>
+      <div class="box-item"><span class="ico">📄</span>Single HTML file</div>
+      <div class="box-item"><span class="ico">🎨</span>Pure CSS pixel art</div>
+      <div class="box-item"><span class="ico">⚡</span>Vanilla JavaScript</div>
+      <div class="box-item"><span class="ico">🔒</span>Zero dependencies</div>
+    </div>
+
+  </div>
+
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="border-color:#00BFFF"></div>Input Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#FFD700"></div>Core Engine</div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#39FF14"></div>Output Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#FF8C00"></div>Data Layer</div>
+  <div class="legend-item"><div class="legend-dot" style="border-color:#9B59B6"></div>Monetization</div>
+</div>
+
+</body>
+</html>
